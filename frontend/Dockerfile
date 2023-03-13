@@ -1,0 +1,22 @@
+FROM python:3.9
+
+RUN mkdir /app
+WORKDIR /app 
+
+COPY requirements.txt /app/requirements.txt
+RUN pip install -r requirements.txt
+
+COPY . /app/
+
+ARG OPENAI_API_KEY 
+ENV OPENAI_API_KEY $OPENAI_API_KEY
+ARG COHERE_API_KEY
+ENV COHERE_API_KEY $COHERE_API_KEY
+ARG QDRANT_URL
+ENV QDRANT_URL $QDRANT_URL
+ARG QDRANT_PORT
+ENV QDRANT_PORT $QDRANT_PORT
+
+ENV STAGE dev
+
+CMD ["python", "app.py"]

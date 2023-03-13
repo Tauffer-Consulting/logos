@@ -130,3 +130,6 @@ dmypy.json
 
 # cache
 /frontend/cache/*
+
+# qdrant
+/qdrant/*
