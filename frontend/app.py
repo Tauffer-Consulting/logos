@@ -3,7 +3,8 @@ import dash_bootstrap_components as dbc
 from copy import deepcopy
 
 from config import config
-from utils import pre_parse_pdf, add_pdf_to_db
+from utils import pre_parse_pdf, add_pdf_to_db, get_qdrant_response, get_openai_response
+from dash.exceptions import PreventUpdate
 
 
 # if 'REDIS_URL' in os.environ:
@@ -430,6 +431,34 @@ def add_document(n_clicks, file_contents, title, author, year):
         else:
             return "Missing document or information!", True, "danger"
     return no_update, no_update, no_update
+
+
+@app.callback(
+    Output("answer-text", "children"),
+    Input('button-question', 'n_clicks'),
+    State('input', 'value'),
+)
+def send_question(n_clicks, question):
+    if not n_clicks:
+        raise PreventUpdate()
+    
+    qdrant_answer = get_qdrant_response(question)
+
+    prompt = f"""
+    Given the texts below, answer the following question:
+    Question: {question}
+
+    Texts:
+    """
+
+    for response in qdrant_answer:
+        prompt += '{}\n'.format(response.payload.get('text'))
+
+    openai_answer = get_openai_response(prompt=prompt)
+    if openai_answer is None:
+        return "No answer found"
+    
+    return html.P(str(openai_answer.choices[0].message.content))
 
 
 if __name__ == '__main__':
