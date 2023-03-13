@@ -455,8 +455,9 @@ def send_question(n_clicks, question):
         prompt += '{}\n'.format(response.payload.get('text'))
 
     openai_answer = get_openai_response(prompt=prompt)
-    if openai_answer is None:
+    if not openai_answer or not openai_answer.choices:
         return "No answer found"
+    
     
     return html.P(str(openai_answer.choices[0].message.content))
 
