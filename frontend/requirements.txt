@@ -1,0 +1,5 @@
+cohere==3.10.0
+openai==0.27.2
+dash[diskcache]
+dash-bootstrap-components==1.4.0
+pypdf==3.5.2
