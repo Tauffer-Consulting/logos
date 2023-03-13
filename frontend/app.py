@@ -391,7 +391,7 @@ def display_page(n_clicks_question, n_clicks_add, add_style, question_style):
 )
 def update_forms(file_contents, file_name, last_modified):
     if file_contents is not None:    
-        metadata = pre_parse_pdf(base64_pdf_bytestring=file_contents, use_openai=False)
+        metadata = pre_parse_pdf(base64_pdf_bytestring=file_contents, use_openai=True)
         return metadata['title'], metadata['author'], metadata['year']
     return "", "", ""
 
