@@ -4,8 +4,9 @@ import json
 class Config:
     OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
     COHERE_API_KEY = os.environ.get("COHERE_API_KEY")
-    QDRANT_URL = os.environ.get("QDRANT_URL")
+    QDRANT_HOST = os.environ.get("QDRANT_HOST")
     QDRANT_PORT = os.environ.get("QDRANT_PORT")
+    QDRANT_API_KEY = os.environ.get("QDRANT_API_KEY")
 
 class DevConfig(Config):
     DEBUG = True
