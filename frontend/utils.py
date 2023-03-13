@@ -109,9 +109,10 @@ def get_cohere_embeddings(texts: list, model: str = None) -> list:
     )
     return response
 
+
 def add_sentences_to_db(sentences: list, title: str, author: str, year: str) -> None:
     # TODO: vectorize and add sentences to db
-    collection_name = "hackaton_collection"
+    collection_name = "hackathhon_collection"
     texts = []
     for sentence in sentences:
         texts.append(f'{title} {author} {year}: {sentence}')
