@@ -3,6 +3,11 @@ import base64
 import io
 import os
 import openai
+from qdrant_client import QdrantClient
+from qdrant_client.http.models import models
+import cohere
+from config import config
+from uuid import uuid4
 
 
 def pre_parse_pdf(base64_pdf_bytestring: str, use_openai: bool = False) -> dict:
@@ -93,6 +98,54 @@ def sentences_from_full_text(full_text: str, max_length: int=2000) -> list:
     return sentences_list
 
 
+def get_cohere_embeddings(texts: list, model: str = None) -> list:
+    cohere_client = cohere.Client(config.COHERE_API_KEY)
+    if model is None:
+        model = 'multilingual-22-12'
+
+    response = cohere_client.embed(
+        texts=texts,
+        model=model,
+    )
+    return response
+
 def add_sentences_to_db(sentences: list, title: str, author: str, year: str) -> None:
     # TODO: vectorize and add sentences to db
+    collection_name = "hackaton_collection"
+    texts = []
+    for sentence in sentences:
+        texts.append(f'{title} {author} {year}: {sentence}')
+    
+    embeddings = get_cohere_embeddings(texts=texts)
+
+    db_client = QdrantClient(
+        host=config.QDRANT_HOST,
+        api_key=config.QDRANT_API_KEY,
+    )
+
+    batch_data = {
+        "ids": [],
+        "payloads": [],
+        "vectors": [],
+    }
+    for embedding, sentence in zip(embeddings, sentences):
+        batch_data['ids'].append(str(uuid4()))
+        payload = {
+            "author": author,
+            "title": title,
+            "year": year,
+            "text": sentence,
+        }
+        batch_data['payloads'].append(payload)
+        batch_data['vectors'].append([float(e) for e in embedding])
+
+    db_client.upsert(
+        collection_name=f"{collection_name}",
+        points=models.Batch(
+            ids=batch_data['ids'],
+            payloads=batch_data['payloads'],
+            vectors=batch_data['vectors']
+        ),
+    )
+
     return "success"
