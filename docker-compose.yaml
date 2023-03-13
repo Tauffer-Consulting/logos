@@ -19,3 +19,5 @@ services:
       - QDRANT_PORT=6333
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - COHERE_API_KEY=${COHERE_API_KEY}
+    volumes:
+      - ./frontend:/app
