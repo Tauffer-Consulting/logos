@@ -4,3 +4,4 @@ qdrant-client==1.0.5
 dash[diskcache]
 dash-bootstrap-components==1.4.0
 pypdf==3.5.2
+langchain==0.0.108
