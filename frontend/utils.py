@@ -3,6 +3,11 @@ import base64
 import io
 import os
 import openai
+from qdrant_client import QdrantClient
+from qdrant_client.http.models import models
+import cohere
+from config import config
+from uuid import uuid4
 
 
 def pre_parse_pdf(base64_pdf_bytestring: str, use_openai: bool = False) -> dict:
@@ -57,7 +62,7 @@ Information:"""
 
 def add_pdf_to_db(base64_pdf_bytestring: str, title: str, author: str, year: str) -> None:
     full_text = parse_full_pdf(base64_pdf_bytestring=base64_pdf_bytestring)
-    sentences = sentences_from_full_text(full_text=full_text, max_length=2000)
+    sentences = sentences_from_full_text(full_text=full_text, max_length=1000)
     result = add_sentences_to_db(sentences=sentences, title=title, author=author, year=year)
     return result
 
@@ -83,16 +88,97 @@ def sentences_from_full_text(full_text: str, max_length: int=2000) -> list:
     last_sentence = sentences[0]
     for i, s in enumerate(sentences[1:]):
         combined_sentence = last_sentence + ". " + s
-        if len(combined_sentence) > 2000:
-            sentences_list.append(last_sentence)
+        if len(combined_sentence) > max_length:
+            sentences_list.append(last_sentence.strip())
             last_sentence = s
         else:
             last_sentence = combined_sentence
             if i == len(sentences) - 2:
-                sentences_list.append(last_sentence)
+                sentences_list.append(last_sentence.strip())
     return sentences_list
+
+
+def get_cohere_embeddings(texts: list, model: str = None) -> list:
+    cohere_client = cohere.Client(config.COHERE_API_KEY)
+    if model is None:
+        model = 'multilingual-22-12'
+
+    response = cohere_client.embed(
+        texts=texts,
+        model=model,
+    )
+    return response
 
 
 def add_sentences_to_db(sentences: list, title: str, author: str, year: str) -> None:
     # TODO: vectorize and add sentences to db
+    collection_name = "hackathhon_collection"
+    texts = []
+    for sentence in sentences:
+        texts.append(f'{title} {author} {year}: {sentence}')
+    
+    embeddings = get_cohere_embeddings(texts=texts)
+
+    db_client = QdrantClient(
+        host=config.QDRANT_HOST,
+        api_key=config.QDRANT_API_KEY,
+    )
+
+    batch_data = {
+        "ids": [],
+        "payloads": [],
+        "vectors": [],
+    }
+    for embedding, sentence in zip(embeddings, sentences):
+        batch_data['ids'].append(str(uuid4()))
+        payload = {
+            "author": author,
+            "title": title,
+            "year": year,
+            "text": sentence,
+        }
+        batch_data['payloads'].append(payload)
+        batch_data['vectors'].append([float(e) for e in embedding])
+
+    db_client.upsert(
+        collection_name=f"{collection_name}",
+        points=models.Batch(
+            ids=batch_data['ids'],
+            payloads=batch_data['payloads'],
+            vectors=batch_data['vectors']
+        ),
+    )
+
     return "success"
+
+def get_qdrant_response(question, limit: int = 5):
+    embeddings = get_cohere_embeddings(texts=[question])
+    embedding = [float(e) for e in embeddings.embeddings[0]]
+
+    db_client = QdrantClient(
+        host=config.QDRANT_HOST,
+        api_key=config.QDRANT_API_KEY,
+    )
+
+    response = db_client.search(
+        collection_name="hackaton_collection",
+        query_vector=embedding,
+        limit=limit,
+    )
+    return response
+
+
+def get_openai_response(prompt):
+    messages = [{"role": "user", "content": prompt}]
+    
+    openai_model = 'gpt-3.5-turbo'
+    response = openai.ChatCompletion.create(
+        model=openai_model,
+        messages=messages,
+        temperature=0.1,
+        max_tokens=1000,
+        # frequency_penalty=0.0,
+        # presence_penalty=0.0,
+        # stop=["\n"]
+    )
+    return response
