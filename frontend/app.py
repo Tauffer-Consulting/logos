@@ -45,7 +45,10 @@ navigate_buttons_style = {
 navigate_question = html.Button(
     'Question',
     id='navigate-question',
-    style=navigate_buttons_style
+    style={
+        **navigate_buttons_style,
+        'border-bottom': f'2px solid {GRAY}',
+    }
 )
 
 navigate_add = html.Button(
@@ -179,6 +182,7 @@ question_component = html.Div(
         collapsible_references,
     ],
     id='div-question-component',
+    style={"visibility": "visible", "display": "block"},
 )
 
 # Add components
@@ -302,6 +306,7 @@ add_component = html.Div(
         waiting_area_1,
     ],
     id='div-add-component',
+    style={"visibility": "hidden", "display": "none"}
 )
 
 # App layout
@@ -324,7 +329,10 @@ app.layout = html.Div(
         html.Br(),
         html.Div(
             id='div-page-content',
-            children=[question_component],
+            children=[
+                question_component,
+                add_component
+            ],
         )
     ]
 )
@@ -344,25 +352,31 @@ def toggle_collapse_references(n, is_open):
 
 # Callbacks Add document
 @app.callback(
-    Output('div-page-content', 'children'),
+    Output('div-add-component', 'style'),
+    Output('div-question-component', 'style'),
     Output('navigate-question', 'style'),
     Output('navigate-add', 'style'),
     Input('navigate-question', 'n_clicks'),
     Input('navigate-add', 'n_clicks'),
-    State('div-page-content', 'children'),
+    State('div-add-component', 'style'),
+    State('div-question-component', 'style'),
 )
-def display_page(n_clicks_question, n_clicks_add, page_content):
+def display_page(n_clicks_question, n_clicks_add, add_style, question_style):
     button_id = ctx.triggered_id
     selected_style = deepcopy(navigate_buttons_style)
     selected_style['border-bottom'] = f'2px solid {GRAY}'
     unselected_style = deepcopy(navigate_buttons_style)
     unselected_style['border-bottom'] = f'0px white'
     if button_id is None:
-        return no_update, no_update, no_update
+        return no_update, no_update, no_update, no_update
     elif button_id == 'navigate-question':
-        return question_component, selected_style, unselected_style
+        add_style.update({'visibility': 'hidden', 'display': 'none'})
+        question_style.update({'visibility': 'visible', 'display': 'block'})
+        return add_style, question_style, selected_style, unselected_style
     elif button_id == 'navigate-add':
-        return add_component, unselected_style, selected_style
+        question_style.update({'visibility': 'hidden', 'display': 'none'})
+        add_style.update({'visibility': 'visible', 'display': 'block'})
+        return add_style, question_style, unselected_style, selected_style
 
 
 @app.callback(
