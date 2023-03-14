@@ -8,6 +8,8 @@ from qdrant_client.http.models import models
 import cohere
 from config import config
 from uuid import uuid4
+from langdetect import detect
+from iso639 import Lang
 
 
 def pre_parse_pdf(base64_pdf_bytestring: str, use_openai: bool = False) -> dict:
@@ -182,3 +184,12 @@ def get_openai_response(prompt):
         # stop=["\n"]
     )
     return response
+
+
+def detect_language(text: str, module: str="python"):
+    if module == "python":
+        return Lang(detect(text)).name
+    elif module == "cohere":
+        co = cohere.Client(config.COHERE_API_KEY)
+        r = co.detect_language(texts=[text])
+        return r.results[0].language_name

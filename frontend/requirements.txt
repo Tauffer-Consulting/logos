@@ -5,3 +5,5 @@ dash[diskcache]
 dash-bootstrap-components==1.4.0
 pypdf==3.5.2
 langchain==0.0.108
+iso639-lang==2.1.0
+langdetect==1.0.9

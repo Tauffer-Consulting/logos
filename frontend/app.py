@@ -3,7 +3,13 @@ import dash_bootstrap_components as dbc
 from copy import deepcopy
 
 from config import config
-from utils import pre_parse_pdf, add_pdf_to_db, get_qdrant_response, get_openai_response
+from utils import (
+    pre_parse_pdf, 
+    add_pdf_to_db, 
+    get_qdrant_response, 
+    get_openai_response,
+    detect_language
+)
 from dash.exceptions import PreventUpdate
 
 
@@ -442,17 +448,20 @@ def send_question(n_clicks, question):
     if not n_clicks:
         raise PreventUpdate()
     
+    # Detect question language
+    language = detect_language(question, module="python")
+    
     qdrant_answer = get_qdrant_response(question)
 
-    prompt = f"""
-    Given the excerpts below, answer the following question:
-    Question: {question}
-    """
-
+    prompt = ""
     for r in qdrant_answer:
-        prompt += f"""
-excerpt: author: {r.payload.get('author')}, title: {r.payload.get('title')}, text: {r.payload.get('text')}
-"""
+        prompt += f"""excerpt: author: {r.payload.get('author')}, title: {r.payload.get('title')}, text: {r.payload.get('text')}\n"""
+
+    prompt += f"""
+Given the excerpts above, answer the following question in {language}:
+Question: {question}"""
+
+    print(prompt)
 
     openai_answer = get_openai_response(prompt=prompt)
     if not openai_answer or not openai_answer.choices:
