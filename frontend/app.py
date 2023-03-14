@@ -325,7 +325,9 @@ app.layout = html.Div(
                 question_component,
                 add_component
             ],
-        )
+        ),
+        html.Br(),
+        html.Br(),
     ]
 )
 

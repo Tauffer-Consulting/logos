@@ -23,7 +23,7 @@ def pre_parse_pdf(base64_pdf_bytestring: str, use_openai: bool = False) -> dict:
     reader = PdfReader(io.BytesIO(pdf_bytes))
 
     pages_list = [p for p in reader.pages]
-    first_pages_content = " ".join([p.extract_text().replace("\n", " ").replace("..", "") for p in pages_list[0:5]])[0:2000]
+    first_pages_content = " ".join([p.extract_text().replace("\n", " ").replace("..", "") for p in pages_list[0:20]])[0:2000]
     if use_openai:
         return extract_metadata_openai(text_content=first_pages_content)
     else:
@@ -54,6 +54,7 @@ Information:"""
         # stop=["\n"]
     )
     response_string = response["choices"][0]["message"]["content"].lower()
+    print(response_string)
     metadata = {
         "title": response_string.split("title:")[1].split("2")[0].split("\n:")[0].strip(),
         "author": response_string.split("author:")[1].split("3")[0].split("\n")[0].strip(),
