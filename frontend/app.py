@@ -440,6 +440,10 @@ def send_question(n_clicks, question):
     prompt = ""
     for r in qdrant_answer:
         prompt += f"""excerpt: author: {r.payload.get('author')}, title: {r.payload.get('title')}, text: {r.payload.get('text')}\n"""
+    
+    # TODO - figure out a relevant limit for contextual information
+    if len(prompt) > 10000:
+        prompt = prompt[0:10000]
 
     prompt += f"""
 Given the excerpts above, answer the following question in {language}:
