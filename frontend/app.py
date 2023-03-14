@@ -1,5 +1,6 @@
 from dash import Dash, dcc, html, Input, Output, State, ctx, no_update, DiskcacheManager, CeleryManager
 import dash_bootstrap_components as dbc
+from dash.exceptions import PreventUpdate
 from copy import deepcopy
 
 from config import config
@@ -10,7 +11,7 @@ from utils import (
     get_openai_response,
     detect_language
 )
-from dash.exceptions import PreventUpdate
+from dash_utils import create_references_cards
 
 
 # if 'REDIS_URL' in os.environ:
@@ -26,7 +27,11 @@ cache = diskcache.Cache("./cache")
 background_callback_manager = DiskcacheManager(cache)
 
 
-app = Dash(__name__, external_stylesheets=[dbc.themes.LITERA])
+app = Dash(
+    __name__, 
+    title='Logos',
+    external_stylesheets=[dbc.themes.LITERA]
+)
 server=app.server
 
 GRAY = '#474747'
@@ -148,35 +153,6 @@ references_button = dbc.Button(
 )
 
 collapsible_references = dbc.Collapse(
-    dbc.Row(
-        children=[
-            dbc.Col(
-                dbc.Card(
-                    [
-                        dbc.CardHeader("Title, Author, Year"),
-                        dbc.CardBody([html.P("This is some card text", className="card-text")]),
-                    ]
-                )
-            ),
-            dbc.Col(
-                dbc.Card(
-                    [
-                        dbc.CardHeader("Title, Author, Year"),
-                        dbc.CardBody([html.P("This is some card text", className="card-text")]),
-                    ]
-                )
-            ),
-            dbc.Col(
-                dbc.Card(
-                    [
-                        dbc.CardHeader("Title, Author, Year"),
-                        dbc.CardBody([html.P("This is some card text", className="card-text")]),
-                    ]
-                )
-            ),
-        ],
-        style={"margin-left": "5rem", "margin-right": "5rem", "margin-top": "8px"},
-    ),
     id="collapsible-references",
     is_open=False,
 )
@@ -441,6 +417,7 @@ def add_document(n_clicks, file_contents, title, author, year):
 
 @app.callback(
     Output("answer-text", "children"),
+    Output("collapsible-references", "children"),
     Input('button-question', 'n_clicks'),
     State('input', 'value'),
 )
@@ -461,14 +438,13 @@ def send_question(n_clicks, question):
 Given the excerpts above, answer the following question in {language}:
 Question: {question}"""
 
-    print(prompt)
-
     openai_answer = get_openai_response(prompt=prompt)
     if not openai_answer or not openai_answer.choices:
         return "No answer found"
     
-    
-    return html.P(str(openai_answer.choices[0].message.content))
+    references_rows = create_references_cards(references=qdrant_answer)
+
+    return html.P(str(openai_answer.choices[0].message.content)), references_rows
 
 
 if __name__ == '__main__':
