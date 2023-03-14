@@ -82,22 +82,26 @@ first_row = dbc.Row(
 )
 
 # Question components
-text_input = dbc.Input(
-    id="input", 
-    placeholder="Question something...", 
-    type="text",
+text_input = dbc.Textarea(
+    id="text-input", 
+    placeholder="Ask something...", 
+    value="",
+    rows=2,
+    draggable=False, 
     style={
-        'width': '600px', 
+        'max-width': '600px', 
         'display': 'block', 
         'margin-left': 'auto', 
         'margin-right': 'auto', 
         'border-color': GRAY,
-        'box-shadow': '0px 3px 4px rgb(0 0 0 / 70%)',
+        'box-shadow': '0px 1px 4px rgb(0 0 0 / 70%)',
+        'resize': 'none', 
+        # 'fontSize': '25px',
     }
 )
 
 question_button = dbc.Button(
-    "Question", 
+    "Ask", 
     id="button-question", 
     color="primary", 
     style={
@@ -118,7 +122,7 @@ answer_text = html.Div(
     id='answer-text',
     style={
         'width': '600px', 
-        'height': '200px',
+        'height': '300px',
         'display': 'block', 
         'margin-left': 'auto', 
         'margin-right': 'auto',
@@ -130,7 +134,9 @@ answer_text = html.Div(
         'border-width': '1px',
         'border-style': 'solid',
         'font-size': '1.1rem',
-        'box-shadow': '0px 3px 4px rgb(0 0 0 / 70%)',
+        'box-shadow': '0px 1px 4px rgb(0 0 0 / 70%)',
+        'overflow-y': 'scroll',
+        'padding': '10px',
     }
 )
 
@@ -139,7 +145,7 @@ references_button = dbc.Button(
     id="button-references", 
     color="primary", 
     style={
-        'width': '120px', 
+        'width': '110px', 
         'display': 'block', 
         'margin-left': 'auto', 
         'margin-right': 'auto',
@@ -147,8 +153,9 @@ references_button = dbc.Button(
         'color': GRAY, 
         'background-color': 'white',
         'border-color': GRAY, 'border-radius': '0.25rem', 'border-width': '1px',
-        'font-size': '0.9rem', 
+        'font-size': '1rem', 
         'font-weight': '400',
+        'padding': '1px',
     }
 )
 
@@ -419,7 +426,7 @@ def add_document(n_clicks, file_contents, title, author, year):
     Output("answer-text", "children"),
     Output("collapsible-references", "children"),
     Input('button-question', 'n_clicks'),
-    State('input', 'value'),
+    State('text-input', 'value'),
 )
 def send_question(n_clicks, question):
     if not n_clicks:
