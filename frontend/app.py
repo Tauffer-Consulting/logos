@@ -84,7 +84,7 @@ first_row = dbc.Row(
 # Question components
 text_input = dbc.Textarea(
     id="text-input", 
-    placeholder="Ask something...", 
+    placeholder="The unexamined life is not worth living! Ask something...", 
     value="",
     rows=2,
     draggable=False, 
@@ -112,6 +112,10 @@ use_external_search_tooltip = dbc.Tooltip(
     "Use external search is available to premium users.",
     target="checklist-inline-input",
     placement="left",
+    style={
+        'font-size': '0.9rem',
+        'color': GRAY,
+    }
 )
 
 question_button = dbc.Button(
@@ -394,12 +398,20 @@ add_component = html.Div(
             "Integration with external storage is available to premium users.",
             target="row-load-from-storage",
             placement="left",
+            style={
+                'font-size': '0.9rem',
+                'color': GRAY,
+            }
         ),
         from_url,
         dbc.Tooltip(
             "URL parsing is available to premium users.",
             target="row-load-from-url",
             placement="left",
+            style={
+                'font-size': '0.9rem',
+                'color': GRAY,
+            }
         ),
         upload_area,
         html.Br(),
