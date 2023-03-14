@@ -445,14 +445,14 @@ def send_question(n_clicks, question):
     qdrant_answer = get_qdrant_response(question)
 
     prompt = f"""
-    Given the texts below, answer the following question:
+    Given the excerpts below, answer the following question:
     Question: {question}
-
-    Texts:
     """
 
-    for response in qdrant_answer:
-        prompt += '{}\n'.format(response.payload.get('text'))
+    for r in qdrant_answer:
+        prompt += f"""
+excerpt: author: {r.payload.get('author')}, title: {r.payload.get('title')}, text: {r.payload.get('text')}
+"""
 
     openai_answer = get_openai_response(prompt=prompt)
     if not openai_answer or not openai_answer.choices:

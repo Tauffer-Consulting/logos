@@ -151,7 +151,7 @@ def add_sentences_to_db(sentences: list, title: str, author: str, year: str) -> 
     return "success"
 
 
-def get_qdrant_response(question, limit: int = 8):
+def get_qdrant_response(question, limit: int = 5):
     embeddings = get_cohere_embeddings(texts=[question])
     embedding = [float(e) for e in embeddings.embeddings[0]]
 
