@@ -186,6 +186,7 @@ from_storage = dbc.Row(
         dbc.Col(html.Img(src="/assets/images/s3.png", style={'width': '40px', 'height': '40px', 'opacity': '0.4'}), width=1),
         dbc.Col(html.Img(src="/assets/images/gdocs.png", style={'width': '40px', 'height': '40px', 'opacity': '0.4'}), width=1),
         dbc.Col(html.Img(src="/assets/images/twitter.png", style={'width': '40px', 'height': '40px', 'opacity': '0.4'}), width=1),
+        dbc.Col(html.Img(src="/assets/images/database.png", style={'width': '40px', 'height': '40px', 'opacity': '0.4'}), width=1),
     ],
     className="mb-3",
     style={
