@@ -81,7 +81,7 @@ def parse_full_pdf(base64_pdf_bytestring: str) -> dict:
     reader = PdfReader(io.BytesIO(pdf_bytes))
 
     pages_list = [p for p in reader.pages]
-    full_text = " ".join([p.extract_text().replace("\n", " ").replace("..", "") for p in pages_list])
+    full_text = " ".join([p.extract_text().replace("\n", " ").replace("..", "").replace("  ", " ") for p in pages_list])
     return full_text
 
 
@@ -154,7 +154,7 @@ def add_sentences_to_db(sentences: list, title: str, author: str, year: str) -> 
     return "success"
 
 
-def get_qdrant_response(question, limit: int = 5):
+def get_qdrant_response(question, limit: int = 10):
     embeddings = get_cohere_embeddings(texts=[question])
     embedding = [float(e) for e in embeddings.embeddings[0]]
 
