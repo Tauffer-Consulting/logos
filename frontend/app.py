@@ -178,25 +178,72 @@ question_component = html.Div(
 )
 
 # Add components
-upload_area = dcc.Upload(
-    id='upload-data',
-    children=html.Div([
-        'Drag and Drop or ',
-        html.A('Select File')
-    ]),
+from_storage = dbc.Row(
+    [
+        dbc.Label("From storage:", html_for="input-from-storage-row", width=3),
+        dbc.Col(html.Img(src="/assets/images/gdrive.png", style={'width': '40px', 'height': '40px'}), width=1),
+        dbc.Col(html.Img(src="/assets/images/dropbox.png", style={'width': '40px', 'height': '40px'}), width=1),
+        dbc.Col(html.Img(src="/assets/images/s3.png", style={'width': '40px', 'height': '40px'}), width=1),
+    ],
+    className="mb-3",
     style={
-        'width': '500px',
-        'display': 'block', 
-        'margin-left': 'auto', 
+        'width': '550px',
+        'margin-left': 'auto',
         'margin-right': 'auto',
-        'margin-top': '8px',
-        'lineHeight': '60px',
-        'borderWidth': '1px',
-        'borderStyle': 'dashed',
-        'borderRadius': '5px',
-        'textAlign': 'center'
-    },
-    multiple=False
+    }
+)
+
+from_url = dbc.Row(
+    [
+        dbc.Label("From url:", html_for="input-from-url-row", width=3),
+        dbc.Col(
+            dbc.Input(
+                type="url", id="input-from-url-row", placeholder="url"
+            ),
+            width=9,
+        ),
+    ],
+    className="mb-3",
+    style={
+        'width': '550px',
+        'margin-left': 'auto',
+        'margin-right': 'auto',
+    }
+)
+
+upload_area = dbc.Row(
+    [
+        dbc.Label("From file:", html_for="input-from-url-row", width=3),
+        dbc.Col( 
+            dcc.Upload(
+                id='upload-data',
+                children=html.Div([
+                    'Drag and Drop or ',
+                    html.A('Select File')
+                ]),
+                style={
+                    # 'width': '500px',
+                    # 'display': 'block', 
+                    # 'margin-left': 'auto', 
+                    # 'margin-right': 'auto',
+                    # 'margin-top': '8px',
+                    'lineHeight': '60px',
+                    'borderWidth': '1px',
+                    'borderStyle': 'dashed',
+                    'borderRadius': '5px',
+                    'textAlign': 'center'
+                },
+                multiple=False
+            ),
+            width=9,
+        ),
+    ],
+    className="mb-3",
+    style={
+        'width': '550px',
+        'margin-left': 'auto',
+        'margin-right': 'auto',
+    }
 )
 
 title_input = dbc.Row(
@@ -290,6 +337,8 @@ waiting_area_1 = dbc.Row(
 
 add_component = html.Div(
     children=[
+        from_storage,
+        from_url,
         upload_area,
         html.Br(),
         add_form,
