@@ -180,10 +180,12 @@ question_component = html.Div(
 # Add components
 from_storage = dbc.Row(
     [
-        dbc.Label("From storage:", html_for="input-from-storage-row", width=3),
-        dbc.Col(html.Img(src="/assets/images/gdrive.png", style={'width': '40px', 'height': '40px'}), width=1),
-        dbc.Col(html.Img(src="/assets/images/dropbox.png", style={'width': '40px', 'height': '40px'}), width=1),
-        dbc.Col(html.Img(src="/assets/images/s3.png", style={'width': '40px', 'height': '40px'}), width=1),
+        dbc.Label("Integration:", html_for="input-from-storage-row", style={'opacity': '0.4'}, width=3),
+        dbc.Col(html.Img(src="/assets/images/gdrive.png", style={'width': '40px', 'height': '40px', 'opacity': '0.4'}), width=1),
+        dbc.Col(html.Img(src="/assets/images/dropbox.png", style={'width': '40px', 'height': '40px', 'opacity': '0.4'}), width=1),
+        dbc.Col(html.Img(src="/assets/images/s3.png", style={'width': '40px', 'height': '40px', 'opacity': '0.4'}), width=1),
+        dbc.Col(html.Img(src="/assets/images/gdocs.png", style={'width': '40px', 'height': '40px', 'opacity': '0.4'}), width=1),
+        dbc.Col(html.Img(src="/assets/images/twitter.png", style={'width': '40px', 'height': '40px', 'opacity': '0.4'}), width=1),
     ],
     className="mb-3",
     style={
@@ -195,10 +197,10 @@ from_storage = dbc.Row(
 
 from_url = dbc.Row(
     [
-        dbc.Label("From url:", html_for="input-from-url-row", width=3),
+        dbc.Label("From url:", html_for="input-from-url-row", style={'opacity': '0.4'}, width=3),
         dbc.Col(
             dbc.Input(
-                type="url", id="input-from-url-row", placeholder="url"
+                type="url", id="input-from-url-row", placeholder="url", disabled=True
             ),
             width=9,
         ),
