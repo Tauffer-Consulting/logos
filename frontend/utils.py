@@ -111,7 +111,6 @@ def get_cohere_embeddings(texts: list, model: str = None) -> list:
 
 
 def add_sentences_to_db(sentences: list, title: str, author: str, year: str) -> None:
-    # TODO: vectorize and add sentences to db
     collection_name = "hackathon_collection"
     texts = []
     for sentence in sentences:
@@ -151,6 +150,7 @@ def add_sentences_to_db(sentences: list, title: str, author: str, year: str) -> 
 
     return "success"
 
+
 def get_qdrant_response(question, limit: int = 8):
     embeddings = get_cohere_embeddings(texts=[question])
     embedding = [float(e) for e in embeddings.embeddings[0]]
@@ -161,7 +161,7 @@ def get_qdrant_response(question, limit: int = 8):
     )
 
     response = db_client.search(
-        collection_name="hackaton_collection",
+        collection_name="hackathon_collection",
         query_vector=embedding,
         limit=limit,
     )
