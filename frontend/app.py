@@ -100,6 +100,20 @@ text_input = dbc.Textarea(
     }
 )
 
+use_external_search = dbc.Checklist(
+    options=[
+        {"label": "Use external search", "value": 1, "disabled": True}
+    ],
+    value=[],
+    id="checklist-inline-input",
+    inline=True
+)
+use_external_search_tooltip = dbc.Tooltip(
+    "Use external search is available to premium users.",
+    target="checklist-inline-input",
+    placement="left",
+)
+
 question_button = dbc.Button(
     "Ask", 
     id="button-question", 
@@ -109,11 +123,27 @@ question_button = dbc.Button(
         'display': 'block', 
         'margin-left': 'auto', 
         'margin-right': 'auto',
-        'margin-top': '8px',
         'color': GRAY, 
         'background-color': 'white',
         'border-color': GRAY, 'border-radius': '0.25rem', 'border-width': '2px',
         'font-size': '1.1rem', 'line-height': '1.5', 'font-weight': '400',
+    }
+)
+
+question_input_components = html.Div(
+    id='div-question-input-components',
+    children=[
+        text_input,
+        use_external_search,
+        use_external_search_tooltip,
+        question_button,
+    ],
+    style={
+        'width': '600px', 
+        'display': 'block', 
+        'margin-left': 'auto', 
+        'margin-right': 'auto',
+        'margin-top': '8px'
     }
 )
 
@@ -183,8 +213,7 @@ response_components = html.Div(
 
 question_component = html.Div(
     children=[
-        text_input,
-        question_button,
+        question_input_components,
         html.Br(),
         response_components,
         collapsible_references,
@@ -203,7 +232,10 @@ from_storage = dbc.Row(
         dbc.Col(html.Img(src="/assets/images/gdocs.png", style={'width': '40px', 'height': '40px', 'opacity': '0.4'}), width=1),
         dbc.Col(html.Img(src="/assets/images/twitter.png", style={'width': '40px', 'height': '40px', 'opacity': '0.4'}), width=1),
         dbc.Col(html.Img(src="/assets/images/database.png", style={'width': '40px', 'height': '40px', 'opacity': '0.4'}), width=1),
+        dbc.Col(html.Img(src="/assets/images/slack.png", style={'width': '40px', 'height': '40px', 'opacity': '0.4'}), width=1),
+        dbc.Col(html.Img(src="/assets/images/discord.png", style={'width': '40px', 'height': '40px', 'opacity': '0.4'}), width=1),
     ],
+    id="row-load-from-storage",
     className="mb-3",
     style={
         'width': '550px',
@@ -222,6 +254,7 @@ from_url = dbc.Row(
             width=9,
         ),
     ],
+    id="row-load-from-url",
     className="mb-3",
     style={
         'width': '550px',
@@ -357,7 +390,17 @@ waiting_area_1 = dbc.Row(
 add_component = html.Div(
     children=[
         from_storage,
+        dbc.Tooltip(
+            "Integration with external storage is available to premium users.",
+            target="row-load-from-storage",
+            placement="left",
+        ),
         from_url,
+        dbc.Tooltip(
+            "URL parsing is available to premium users.",
+            target="row-load-from-url",
+            placement="left",
+        ),
         upload_area,
         html.Br(),
         add_form,
