@@ -121,12 +121,12 @@ answer_text = html.Div(
     children=[],
     id='answer-text',
     style={
-        'width': '600px', 
+        # 'width': '600px', 
         'height': '300px',
-        'display': 'block', 
-        'margin-left': 'auto', 
-        'margin-right': 'auto',
-        'margin-top': '8px',
+        # 'display': 'block', 
+        # 'margin-left': 'auto', 
+        # 'margin-right': 'auto',
+        # 'margin-top': '8px',
         'color': GRAY, 
         'background-color': 'white',
         'border-color': GRAY, 
@@ -148,7 +148,7 @@ references_button = dbc.Button(
         'width': '110px', 
         'display': 'block', 
         'margin-left': 'auto', 
-        'margin-right': 'auto',
+        'margin-right': '0',
         'margin-top': '0px',
         'color': GRAY, 
         'background-color': 'white',
@@ -164,13 +164,29 @@ collapsible_references = dbc.Collapse(
     is_open=False,
 )
 
+response_components = html.Div(
+    id='div-response-components',
+    children=[
+        answer_text,
+        references_button
+    ],
+    style={
+        'width': '600px', 
+        'display': 'block', 
+        'margin-left': 'auto', 
+        'margin-right': 'auto',
+        'margin-top': '8px',
+        'display': 'none',
+        'visibility': 'hidden',
+    }
+)
+
 question_component = html.Div(
     children=[
         text_input,
         question_button,
         html.Br(),
-        answer_text,
-        references_button,
+        response_components,
         collapsible_references,
     ],
     id='div-question-component',
@@ -479,10 +495,12 @@ def add_document(n_clicks, file_contents, title, author, year):
 @app.callback(
     Output("answer-text", "children"),
     Output("collapsible-references", "children"),
+    Output("div-response-components", "style"),
     Input('button-question', 'n_clicks'),
     State('text-input', 'value'),
+    State("div-response-components", "style"),
 )
-def send_question(n_clicks, question):
+def send_question(n_clicks, question, response_components_style):
     if not n_clicks:
         raise PreventUpdate()
     
@@ -509,7 +527,11 @@ Question: {question}"""
     
     references_rows = create_references_cards(references=qdrant_answer)
 
-    return html.P(str(openai_answer.choices[0].message.content)), references_rows
+    updated_style = deepcopy(response_components_style)
+    updated_style['visibility'] = 'visible'
+    updated_style['display'] = 'block'
+
+    return html.P(str(openai_answer.choices[0].message.content)), references_rows, updated_style
 
 
 if __name__ == '__main__':
