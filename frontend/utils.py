@@ -10,6 +10,8 @@ from config import config
 from uuid import uuid4
 from langdetect import detect
 from iso639 import Lang
+import yt_dlp
+from pydub import AudioSegment
 
 
 def pre_parse_pdf(base64_pdf_bytestring: str, use_openai: bool = False) -> dict:
@@ -154,7 +156,7 @@ def add_sentences_to_db(sentences: list, title: str, author: str, year: str) -> 
     return "success"
 
 
-def get_qdrant_response(question, limit: int = 10):
+def get_qdrant_response(question, limit: int = 8):
     embeddings = get_cohere_embeddings(texts=[question])
     embedding = [float(e) for e in embeddings.embeddings[0]]
 
@@ -194,3 +196,62 @@ def detect_language(text: str, module: str="python"):
         co = cohere.Client(config.COHERE_API_KEY)
         r = co.detect_language(texts=[text])
         return r.results[0].language_name
+
+
+def add_document_from_youtube(url: str) -> str:
+    download_results = download_audio_from_youtube(url=url)
+    file_name = download_results.get("file_name", None)
+    title = download_results.get("title", None)
+    description = download_results.get("description", None)
+    author = download_results.get("uploader", None)
+    year = "2021"
+    result = add_pdf_to_db(
+        base64_pdf_bytestring=file_name,
+        title=title,
+        author=author,
+        year=year,
+    )
+    return result
+
+
+def download_audio_from_youtube(url: str) -> str:
+    downloaded_file_name = 'download_audio'
+    ydl_opts = {
+        'format': 'm4a/bestaudio/best',
+        "outtmpl": downloaded_file_name,
+        'overwrites': True,
+        'postprocessors': [{ 
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'mp3',
+        }]
+    }
+    with yt_dlp.YoutubeDL(ydl_opts, ) as ydl:
+        info = ydl.extract_info(url, download=True)
+
+    download_results = dict(
+        file_name=downloaded_file_name + ".mp3",
+        title=info.get("title", None),
+        description=info.get("description", None),
+        channel=info.get("channel", None),
+    )
+    return download_results
+
+
+def transcript_from_audio(audio_file: str) -> str:
+    full_audio = AudioSegment.from_mp3(audio_file)
+    total_time = len(full_audio)
+    # PyDub handles time in milliseconds
+    ten_minutes = 10 * 60 * 1000
+    full_transcript = ""
+    i = 0
+    while True:
+        endpoint = min((i+1)*ten_minutes, total_time-1)
+        minutes = full_audio[i*ten_minutes:endpoint]
+        minutes.export(f"audio_piece_{i}.mp3", format="mp3")
+        audio_file= open(f"audio_piece_{i}.mp3", "rb")
+        transcript = openai.Audio.transcribe("whisper-1", audio_file).to_dict()["text"]
+        full_transcript += " " + transcript
+        i += 1
+        if endpoint == total_time-1:
+            break
+    return full_transcript
