@@ -133,3 +133,5 @@ dmypy.json
 
 # qdrant
 /qdrant/*
+
+*.fuse_hidden*
