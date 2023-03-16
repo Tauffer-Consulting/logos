@@ -132,6 +132,9 @@ def qdrant_search(question):
         query_vector=embedding,
         limit=8,
     )
+    print(f"QDRANT ANSWER TYPE {type(qdrant_answer)}")
+    print(f"QDRANT ANSWER {qdrant_answer}")
+
 
     # answers_list = []
     # for answer in qdrant_answer:
@@ -181,9 +184,9 @@ agent = initialize_agent(
 )
 
 if __name__ == '__main__':
-    # question = 'who wrote about his posthumous memories?'
+    question = 'who wrote about his posthumous memories?'
     # question = 'quem é o autor que escreve sobre suas memórias póstumas?'
-    question = 'em qual trecho o machado de assis comenta sobre filhos?'
+    # question = 'em qual trecho o machado de assis comenta sobre filhos?'
     # question = 'compare o que esses autores disseram sobre a vida em sociedade: Machado de Assis, Henry David Thoreau, Yuval Noah Harari'
     # question = 'sobre quais épocas cada um desses autores escreve: Machado de Assis, Henry David Thoreau, Yuval Noah Harari'
     # question = 'a obra de cada um desses autores se passa em uma determinada época, tendo um contexto histórico daquela época em específico. Em qual contexto histórico a obra de cada um desses autores se encaixa, ou seja, em qual época se passa a obra de cada um desses autores? Escritores: Machado de Assis, Henry David Thoreau, Yuval Noah Harari'

@@ -3,6 +3,7 @@ import dash_bootstrap_components as dbc
 from dash.exceptions import PreventUpdate
 from copy import deepcopy
 from dotenv import load_dotenv
+from agent_class import Agent
 load_dotenv()
 
 from config import config
@@ -12,7 +13,6 @@ from utils import (
     get_qdrant_response, 
     get_openai_response,
     detect_language,
-    ask_expert_agent
 )
 from dash_utils import create_references_cards
 
@@ -112,6 +112,7 @@ use_external_search = dbc.Checklist(
     id="checklist-inline-input",
     inline=True,
 )
+
 # use_external_search_tooltip = dbc.Tooltip(
 #     "Use external search is available to premium users.",
 #     target="checklist-inline-input",
@@ -562,14 +563,15 @@ def add_document(n_clicks, file_contents, title, author, year):
     return no_update, no_update, no_update
 
 
-@app.callback(
+@app.long_callback(
     Output("answer-text", "children"),
     Output("collapsible-references", "children"),
     Output("div-response-components", "style"),
     Input('button-question', 'n_clicks'),
     State('text-input', 'value'),
     State("checklist-inline-input", "value"),
-    State("div-response-components", "style")
+    State("div-response-components", "style"),
+    manager=background_callback_manager
 )
 def send_question(n_clicks, question, checklist_value, response_components_style):
     if not n_clicks:
@@ -579,9 +581,17 @@ def send_question(n_clicks, question, checklist_value, response_components_style
     language = detect_language(question, module="python")
 
     if checklist_value == [2]:
+        agent = Agent()
         print("entrou no checklist value")
-        agent_answer = str(ask_expert_agent(question))
-        return html.P(agent_answer)
+        agent_answer = agent.ask_expert_agent(question)
+
+        references_rows = create_references_cards(references=agent.qdrant_answers)
+
+        updated_style = deepcopy(response_components_style)
+        updated_style['visibility'] = 'visible'
+        updated_style['display'] = 'block'
+        
+        return html.P(str(agent_answer)), references_rows, updated_style
 
     qdrant_answer = get_qdrant_response(question)
 
