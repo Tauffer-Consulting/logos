@@ -41,8 +41,18 @@ Create an input with the title of the document and the information you are searc
 Input template: 'TITLE: title of the document INFORMATION: the information you are searching for in the form of a long and well composed question'"""
             )
         ]
+        self.agent = initialize_agent(
+            tools=self.tools, 
+            llm=OpenAI(
+                temperature=0.3,
+                model_name="gpt-3.5-turbo" 
+            ), 
+            agent="zero-shot-react-description", 
+            max_iterations=6,
+            verbose=True,
+        )
         self.qdrant_answers = []
-
+        self.language = ''
 
     def get_openai_response(self, qdrant_answer, question):
         prompt = ""
@@ -51,7 +61,7 @@ Input template: 'TITLE: title of the document INFORMATION: the information you a
         if len(prompt) > 10000:
             prompt = prompt[0:10000]
         prompt += f"""
-Given the excerpts above, answer the following question:
+Given the excerpts above, answer the following question in {self.language}:
 Question: {question}"""
         messages = [{"role": "user", "content": prompt}]
         openai_model = 'gpt-3.5-turbo'
@@ -65,7 +75,6 @@ Question: {question}"""
             return "No answer found"
         return str(openai_answer.choices[0].message.content)
 
-
     def get_cohere_embeddings(self, texts: list, model: str = None) -> list:
         cohere_client = cohere.Client(config.COHERE_API_KEY)
         if model is None:
@@ -76,7 +85,6 @@ Question: {question}"""
         )
         embeddings = [float(e) for e in embeddings.embeddings[0]] 
         return embeddings
-
 
     def get_qdrant_response(self, question, limit: int = 8):
         embeddings = self.get_cohere_embeddings(texts=[question])
@@ -92,11 +100,9 @@ Question: {question}"""
         self.qdrant_answers.extend(response)
         return response
 
-
     def qdrant_search(self, question):
         qdrant_answer = self.get_qdrant_response(question)
         return self.get_openai_response(qdrant_answer, question)
-
 
     def get_qdrant_response_by_filter(self, question, key, value, limit: int = 8):
         embeddings = self.get_cohere_embeddings(texts=[question])
@@ -122,7 +128,6 @@ Question: {question}"""
         self.qdrant_answers.extend(response)
         return response
 
-
     def search_by_author(self, question):
         author_info, question_info = question.split('AUTHOR:', 1)[1].split('INFORMATION:', 1)
         author = author_info.strip().lower()
@@ -130,10 +135,7 @@ Question: {question}"""
         qdrant_answer = self.get_qdrant_response_by_filter(key='author', value=author, question=question_input)
         return self.get_openai_response(qdrant_answer, question)
 
-
     def search_by_title(self, question):
-        print("entrou no qdrant search by title")
-        print(question)
         title_info, question_info = question.split('TITLE:', 1)[1].split('INFORMATION:', 1)
         title = title_info.strip().lower()
         question_input = question_info.strip().lower()
@@ -155,13 +157,4 @@ Question: {question}"""
         
 
     def ask_expert_agent(self, question):
-        self.agent = initialize_agent(
-            tools=self.tools, 
-            llm=OpenAI(temperature=0.1), 
-            agent="zero-shot-react-description", 
-            verbose=True,
-            # return_intermediate_steps=True
-        )
-        #return agent.run(input=question)
-        #return self.run(question=question)
         self.run_in_background(question=question)

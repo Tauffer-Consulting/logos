@@ -643,6 +643,11 @@ def add_document(n_clicks, file_contents, title, author, year):
         Output('interval-component', 'max_intervals'),
     ],
     manager=background_callback_manager,
+    running=[
+        (Output("button-question", "children"), dbc.Spinner(size="sm"), "Ask"),
+        (Output("button-question", "disabled"), True, False),
+    ],
+    prevent_initial_call=True,
     background=True
 )
 def send_question(set_progress, n_clicks, question, checklist_value, response_components_style):
@@ -652,7 +657,7 @@ def send_question(set_progress, n_clicks, question, checklist_value, response_co
     # Detect question language
     language = detect_language(question, module="python")
 
-    # If user selects the expert agent
+    # If user selects the expert agent search
     if checklist_value == [1]:
         agent = Agent()
         agent.ask_expert_agent(question)
