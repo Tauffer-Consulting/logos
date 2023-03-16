@@ -589,7 +589,7 @@ def send_question(n_clicks, question, checklist_value, response_components_style
     # If user selects the expert agent search
     if checklist_value == [1]:
         agent = Agent()
-        agent_answer.language = language
+        agent.language = language
         agent_answer = agent.ask_expert_agent(question)
         references_rows = create_references_cards(references=agent.qdrant_answers)
         answer_text = html.P(str(agent_answer))
