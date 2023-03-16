@@ -15,6 +15,11 @@ from utils import (
     detect_language,
 )
 from dash_utils import create_references_cards
+import time
+import io
+import sys
+import re
+
 
 
 # if 'REDIS_URL' in os.environ:
@@ -28,8 +33,6 @@ from dash_utils import create_references_cards
 import diskcache
 cache = diskcache.Cache("./cache")
 background_callback_manager = DiskcacheManager(cache)
-
-global logs_test
 
 app = Dash(
     __name__, 
@@ -215,11 +218,13 @@ collapsible_references = dbc.Collapse(
     is_open=False,
 )
 
+
 response_components = html.Div(
     id='div-response-components',
     children=[
         answer_text,
-        references_button
+        references_button,
+        
     ],
     style={
         'width': '600px', 
@@ -452,6 +457,46 @@ add_document_toast = dbc.Toast(
     style={"position": "fixed", "top": 66, "right": 10, "width": 350},
 )
 
+logs_div =  html.Div(
+    children=[],
+    id='logs-div',
+    style={
+        # 'width': '600px', 
+        'height': '300px',
+        # 'display': 'block', 
+        # 'margin-left': 'auto', 
+        # 'margin-right': 'auto',
+        # 'margin-top': '8px',
+        'color': GRAY, 
+        'background-color': 'white',
+        'border-color': GRAY, 
+        'border-radius': '0.25rem', 
+        'border-width': '1px',
+        'border-style': 'solid',
+        'font-size': '1.1rem',
+        'box-shadow': '0px 1px 4px rgb(0 0 0 / 70%)',
+        'overflow-y': 'scroll',
+        'padding': '10px',
+    }
+)
+
+logs_component = html.Div(
+    id='div-logs-components',
+    children=[
+        'Expert Agent Logs',
+        logs_div,
+    ],
+    style={
+        'width': '600px', 
+        'display': 'block', 
+        'margin-left': 'auto', 
+        'margin-right': 'auto',
+        'margin-top': '8px',
+        #'display': 'none',
+        #'visibility': 'hidden',
+    }
+)
+
 app.layout = html.Div(
     children=[
         title_image,
@@ -470,12 +515,12 @@ app.layout = html.Div(
         html.Br(),
         dcc.Interval(
             id='interval-component',
-            interval=5*1000, # in milliseconds
+            interval=0.3*1000, # in milliseconds
             n_intervals=0,
             max_intervals=0
         ),
         dcc.Store(id='logs-store'),
-        html.Div(id='logs-div')
+        logs_component
     ]
 )
 
@@ -487,8 +532,9 @@ app.layout = html.Div(
 def update_logs(n, data):
     if n <= 0:
         return no_update
-    
-    return html.P(data)
+
+    cleaned_logs = re.sub(r'\x1b[^m]*m', '', data)
+    return html.P(cleaned_logs, style={'white-space': 'pre-line'})
 
 
 # Callbacks Question
@@ -611,27 +657,22 @@ def send_question(set_progress, n_clicks, question, checklist_value, response_co
         agent = Agent()
         agent.ask_expert_agent(question)
 
-        import time
-        import io
-        import sys
         output_buffer = io.StringIO()
         sys.stdout = sys.stderr = output_buffer
-        global logs_test
         while agent.run_in_background_thread.is_alive():
-            logs_test = output_buffer.getvalue()
-            set_progress((str(logs_test), -1))
-            time.sleep(5)
-        
+            logs = output_buffer.getvalue()
+            set_progress((str(logs), -1))
+            time.sleep(2)
+        logs = output_buffer.getvalue()
+        set_progress((str(logs), -1))
         sys.stdout = sys.__stdout__
-        print("Logs: ", logs_test)
-        
+
         agent_answer = agent.run_in_background_queue.get()
         references_rows = create_references_cards(references=agent.qdrant_answers)
         answer_text = html.P(str(agent_answer))
         updated_style = deepcopy(response_components_style)
         updated_style['visibility'] = 'visible'
         updated_style['display'] = 'block'
-        print('##################### Returning')
         return answer_text, references_rows, updated_style, 0
     
     # If simple semantic search

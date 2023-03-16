@@ -7,7 +7,6 @@ from config import config
 import cohere
 import os
 from dotenv import load_dotenv
-import sys
 from io import StringIO
 import threading
 import queue
