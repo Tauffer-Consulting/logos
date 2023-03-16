@@ -105,8 +105,8 @@ text_input = dbc.Textarea(
 
 use_external_search = dbc.Checklist(
     options=[
-        {"label": "Use external search", "value": 1, "disabled": True},
-        {"label": "Use expert agent", "value": 2, "disabled": False}
+        # {"label": "Use external search", "value": 1, "disabled": True},
+        {"label": "Use expert agent", "value": 1, "disabled": False}
     ],
     value=[],
     id="checklist-inline-input",
@@ -580,44 +580,39 @@ def send_question(n_clicks, question, checklist_value, response_components_style
     # Detect question language
     language = detect_language(question, module="python")
 
-    if checklist_value == [2]:
+    # If user selects the expert agent
+    if checklist_value == [1]:
         agent = Agent()
         print("entrou no checklist value")
         agent_answer = agent.ask_expert_agent(question)
-
         references_rows = create_references_cards(references=agent.qdrant_answers)
-
-        updated_style = deepcopy(response_components_style)
-        updated_style['visibility'] = 'visible'
-        updated_style['display'] = 'block'
-        
-        return html.P(str(agent_answer)), references_rows, updated_style
-
-    qdrant_answer = get_qdrant_response(question)
-
-    prompt = ""
-    for r in qdrant_answer:
-        prompt += f"""excerpt: author: {r.payload.get('author')}, title: {r.payload.get('title')}, text: {r.payload.get('text')}\n"""
+        answer_text = html.P(str(agent_answer))
     
-    # TODO - figure out a relevant limit for contextual information
-    if len(prompt) > 10000:
-        prompt = prompt[0:10000]
+    # If simple semantic search
+    else:
+        qdrant_answer = get_qdrant_response(question)
+        prompt = ""
+        for r in qdrant_answer:
+            prompt += f"""excerpt: author: {r.payload.get('author')}, title: {r.payload.get('title')}, text: {r.payload.get('text')}\n"""
+        
+        if len(prompt) > 10000:
+            prompt = prompt[0:10000]
 
-    prompt += f"""
+        prompt += f"""
 Given the excerpts above, answer the following question in {language}:
 Question: {question}"""
 
-    openai_answer = get_openai_response(prompt=prompt)
-    if not openai_answer or not openai_answer.choices:
-        return "No answer found"
-    
-    references_rows = create_references_cards(references=qdrant_answer)
+        openai_answer = get_openai_response(prompt=prompt)
+        if not openai_answer or not openai_answer.choices:
+            return "No answer found"
+        
+        references_rows = create_references_cards(references=qdrant_answer)
+        answer_text = html.P(str(openai_answer.choices[0].message.content))
 
     updated_style = deepcopy(response_components_style)
     updated_style['visibility'] = 'visible'
     updated_style['display'] = 'block'
-
-    return html.P(str(openai_answer.choices[0].message.content)), references_rows, updated_style
+    return answer_text, references_rows, updated_style
 
 
 if __name__ == '__main__':
