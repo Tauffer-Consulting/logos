@@ -38,6 +38,7 @@ Input template: 'TITLE: title of the document INFORMATION: the information you a
             )
         ]
         self.qdrant_answers = []
+        self.language = ''
 
 
     def get_openai_response(self, qdrant_answer, question):
@@ -47,7 +48,7 @@ Input template: 'TITLE: title of the document INFORMATION: the information you a
         if len(prompt) > 10000:
             prompt = prompt[0:10000]
         prompt += f"""
-Given the excerpts above, answer the following question:
+Given the excerpts above, answer the following question in {self.language}:
 Question: {question}"""
         messages = [{"role": "user", "content": prompt}]
         openai_model = 'gpt-3.5-turbo'
