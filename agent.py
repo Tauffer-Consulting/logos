@@ -89,20 +89,18 @@ def qdrant_search_by_filter(key, value, question):
     return response
 
 def search_author(input):
-    print('PRINT TOOL AUTHOR')
-    print(input)
     author_info, question_info = input.split('AUTHOR:', 1)[1].split('INFORMATION:', 1)
     author = author_info.strip().lower()
     question = question_info.strip().lower()
     qdrant_answer = qdrant_search_by_filter(key='author', value=author, question=question)
-    answers_list = []
-    for count, answer in enumerate(qdrant_answer):
-        if count == 0:
-            author_name = answer.payload.get('author', 'unknown')
-            answers_list.append(f"author name is {author_name}")    
-        answers_list.append(f"{answer.payload.get('text')}")
+    # answers_list = []
+    # for count, answer in enumerate(qdrant_answer):
+    #     if count == 0:
+    #         author_name = answer.payload.get('author', 'unknown')
+    #         answers_list.append(f"author name is {author_name}")    
+    #     answers_list.append(f"{answer.payload.get('text')}")
     
-    return openai_response(question, answers_list)
+    return openai_response(question, qdrant_answer)
 
 
 def search_title(input):
@@ -111,14 +109,14 @@ def search_title(input):
     title = title_info.strip().lower()
     question = question_info.strip().lower()
     qdrant_answer = qdrant_search_by_filter(key='title', value=title, question=question)
-    answers_list = []
-    for count, answer in enumerate(qdrant_answer):
-        if count == 0:
-            title = answer.payload.get('title', 'unknown')
-            answers_list.append(f"title is {title}")
-        answers_list.append(f"{answer.payload.get('text')}")
+    # answers_list = []
+    # for count, answer in enumerate(qdrant_answer):
+    #     if count == 0:
+    #         title = answer.payload.get('title', 'unknown')
+    #         answers_list.append(f"title is {title}")
+    #     answers_list.append(f"{answer.payload.get('text')}")
     
-    return openai_response(question, answers_list)
+    return openai_response(question, qdrant_answer)
         
     
 
@@ -176,7 +174,7 @@ Input template: 'TITLE: title of the document INFORMATION: the information you a
 
 agent = initialize_agent(
     tools=tools, 
-    llm=OpenAI(temperature=0), 
+    llm=OpenAI(temperature=0.1), 
     agent="zero-shot-react-description", 
     verbose=True,
     # return_intermediate_steps=True
@@ -185,14 +183,16 @@ agent = initialize_agent(
 if __name__ == '__main__':
     # question = 'who wrote about his posthumous memories?'
     # question = 'quem é o autor que escreve sobre suas memórias póstumas?'
-    # question = 'em qual trecho o machado de assis comenta sobre filhos?'
+    question = 'em qual trecho o machado de assis comenta sobre filhos?'
     # question = 'compare o que esses autores disseram sobre a vida em sociedade: Machado de Assis, Henry David Thoreau, Yuval Noah Harari'
     # question = 'sobre quais épocas cada um desses autores escreve: Machado de Assis, Henry David Thoreau, Yuval Noah Harari'
-    question = 'a obra de cada um desses autores se passa em uma determinada época, tendo um contexto histórico daquela época em específico. Em qual contexto histórico a obra de cada um desses autores se encaixa, ou seja, em qual época se passa a obra de cada um desses autores? Escritores: Machado de Assis, Henry David Thoreau, Yuval Noah Harari'
+    # question = 'a obra de cada um desses autores se passa em uma determinada época, tendo um contexto histórico daquela época em específico. Em qual contexto histórico a obra de cada um desses autores se encaixa, ou seja, em qual época se passa a obra de cada um desses autores? Escritores: Machado de Assis, Henry David Thoreau, Yuval Noah Harari'
     # question = 'as obras desse autor se passam em diferentes épocas, tendo um contexto histórico espcífico sobre cada época em específico. Em qual contexto histórico as obras desse autor se encaixa, ou seja, em qual época se passa a obra de cada um desses autores? Escritores: Machado de Assis, Henry David Thoreau, Yuval Noah Harari'
     # question = 'o que há de comum nas obras desses três autores: Machado de Assis, Henry David Thoreau, Yuval Noah Harari'
     # question = 'compare o que disseram Machado de Assis e Henry David Thoreau sobre a sociedade?'
     # question = 'qual é o titulo do livro em o autor machado de assis comenta sobre filhos?'
     # question = 'Com efeito, um dia de manhã, estando a passear na chácara, pendurou-se-me uma idéia no trapézio que eu tinha no cérebro.']
 
-    agent.run(input=question)
+    response = agent.run(input=question)
+    print("RESPONSE DO AGENT")
+    print(response)

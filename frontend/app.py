@@ -2,6 +2,8 @@ from dash import Dash, dcc, html, Input, Output, State, ctx, no_update, Diskcach
 import dash_bootstrap_components as dbc
 from dash.exceptions import PreventUpdate
 from copy import deepcopy
+from dotenv import load_dotenv
+load_dotenv()
 
 from config import config
 from utils import (
@@ -9,7 +11,8 @@ from utils import (
     add_pdf_to_db, 
     get_qdrant_response, 
     get_openai_response,
-    detect_language
+    detect_language,
+    ask_expert_agent
 )
 from dash_utils import create_references_cards
 
@@ -102,21 +105,32 @@ text_input = dbc.Textarea(
 
 use_external_search = dbc.Checklist(
     options=[
-        {"label": "Use external search", "value": 1, "disabled": True}
+        {"label": "Use external search", "value": 1, "disabled": True},
+        {"label": "Use expert agent", "value": 2, "disabled": False}
     ],
     value=[],
     id="checklist-inline-input",
-    inline=True
+    inline=True,
 )
-use_external_search_tooltip = dbc.Tooltip(
-    "Use external search is available to premium users.",
-    target="checklist-inline-input",
-    placement="left",
-    style={
-        'font-size': '0.9rem',
-        'color': GRAY,
-    }
-)
+# use_external_search_tooltip = dbc.Tooltip(
+#     "Use external search is available to premium users.",
+#     target="checklist-inline-input",
+#     placement="left",
+#     style={
+#         'font-size': '0.9rem',
+#         'color': GRAY,
+#     }
+# )
+
+# use_expert_agent_tooltip = dbc.Tooltip(
+#     "Use external agent to ask more complex questions.",
+#     target="checklist-inline-input_1",
+#     placement="right",
+#     style={
+#         'font-size': '0.9rem',
+#         'color': GRAY,
+#     }
+# )
 
 question_button = dbc.Button(
     "Ask", 
@@ -139,7 +153,8 @@ question_input_components = html.Div(
     children=[
         text_input,
         use_external_search,
-        use_external_search_tooltip,
+        # use_external_search_tooltip, TODO create tooltip for each checkbox
+        # use_expert_agent_tooltip,
         question_button,
     ],
     style={
@@ -553,15 +568,21 @@ def add_document(n_clicks, file_contents, title, author, year):
     Output("div-response-components", "style"),
     Input('button-question', 'n_clicks'),
     State('text-input', 'value'),
-    State("div-response-components", "style"),
+    State("checklist-inline-input", "value"),
+    State("div-response-components", "style")
 )
-def send_question(n_clicks, question, response_components_style):
+def send_question(n_clicks, question, checklist_value, response_components_style):
     if not n_clicks:
         raise PreventUpdate()
-    
+
     # Detect question language
     language = detect_language(question, module="python")
-    
+
+    if checklist_value == [2]:
+        print("entrou no checklist value")
+        agent_answer = str(ask_expert_agent(question))
+        return html.P(agent_answer)
+
     qdrant_answer = get_qdrant_response(question)
 
     prompt = ""

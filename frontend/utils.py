@@ -12,6 +12,10 @@ from langdetect import detect
 from iso639 import Lang
 import yt_dlp
 from pydub import AudioSegment
+from langchain.agents import initialize_agent, Tool
+from langchain.llms import OpenAI
+from dotenv import load_dotenv
+load_dotenv()
 
 
 def pre_parse_pdf(base64_pdf_bytestring: str, use_openai: bool = False) -> dict:
@@ -172,6 +176,31 @@ def get_qdrant_response(question, limit: int = 8):
     )
     return response
 
+def get_qdrant_response_by_filter(question, key, value, limit: int = 8):
+    embeddings = get_cohere_embeddings(texts=[question])
+    embedding = [float(e) for e in embeddings.embeddings[0]]
+
+    db_client = QdrantClient(
+        api_key=os.environ.get('QDRANT_API_KEY'),
+        host=os.environ.get('QDRANT_HOST')
+    )
+    response = db_client.search(
+        collection_name="hackathon_collection",
+            query_filter=models.Filter(
+                must=[
+                    models.FieldCondition(
+                        key=key,
+                        match=models.MatchValue(
+                            value=value
+                        ) 
+                    )
+                ]
+            ),
+        query_vector=embedding,
+        limit=limit
+    )
+
+    return response
 
 def get_openai_response(prompt):
     messages = [{"role": "user", "content": prompt}]
@@ -255,3 +284,91 @@ def transcript_from_audio(audio_file: str) -> str:
         if endpoint == total_time-1:
             break
     return full_transcript
+
+def agent_get_openai_response(qdrant_answer, question):
+    prompt = ""
+    for r in qdrant_answer:
+        prompt += f"""excerpt: author: {r.payload.get('author')}, title: {r.payload.get('title')}, text: {r.payload.get('text')}\n"""
+    
+    # TODO - figure out a relevant limit for contextual information
+    if len(prompt) > 10000:
+        prompt = prompt[0:10000]
+
+    prompt += f"""
+Given the excerpts above, answer the following question:
+Question: {question}"""
+    
+    openai_answer = get_openai_response(prompt)
+    if not openai_answer or not openai_answer.choices:
+        return "No answer found"
+    
+    return str(openai_answer.choices[0].message.content)
+
+def agent_qdrant_search(question):
+    print("entrou no qdrant search")
+    qdrant_answer = get_qdrant_response(question)
+    
+    return agent_get_openai_response(qdrant_answer, question)
+
+def agent_search_by_author(question):
+    print("entrou no qdrant search by author")
+    author_info, question_info = question.split('AUTHOR:', 1)[1].split('INFORMATION:', 1)
+    author = author_info.strip().lower()
+    question_input = question_info.strip().lower()
+    qdrant_answer = get_qdrant_response_by_filter(key='author', value=author, question=question_input)
+    return agent_get_openai_response(qdrant_answer, question)
+
+def agent_search_by_author(question):
+    print("entrou no qdrant search by title")
+    title_info, question_info = question.split('TITLE:', 1)[1].split('INFORMATION:', 1)
+    title = title_info.strip().lower()
+    question_input = question_info.strip().lower()
+    qdrant_answer = get_qdrant_response_by_filter(key='title', value=title, question=question_input)
+    return agent_get_openai_response(qdrant_answer, question)
+
+
+tools = [
+    Tool(
+        name="search_internal_knowledge_base",
+        func=lambda question: agent_qdrant_search(question),
+        description="""Useful for searcing the internal knowledge base about general.
+Only use this tool if no other specific search tool is suitable for the task."""
+        # description="use when searching for information filtering by a specific author.",
+        # description="use when you want to discover who is the author, asking a question with informations you have",
+    ),
+    Tool(
+        name="search_internal_knowledge_base_for_specific_author",
+        func=lambda question: agent_search_by_author(question),
+        description="""Only use this tool when the name of the specific author is known and mentioned in the question.
+Use this tool for searching information about this specific author.
+If the name of the author is not explicitly mentioned in the original question DO NOT USE THIS TOOL.
+The input to this tool should contain the name of the author and the information you are trying to find. 
+Input template: 'AUTHOR: name of the author INFORMATION: the information you are searching for in the form of a long and well composed question'"""
+        # description="use when you know the author's name and want to filter results based on their name and other informations that you have. create input like 'author: information:'"
+        # description="use when searching for information filtering by a specific author.",
+        # description="use when you want to discover who is the author, asking a question with informations you have",
+    ),
+    Tool(
+        name="search_internal_knowledge_base_for_specific_document_title",
+        func=lambda question: agent_search_by_author(question),
+        description="""Use this only when you are searching for information about one specific document title 
+and you know this document's title. Do not use this if you do not know the document's title. 
+Create an input with the title of the document and the information you are searching for them.
+Input template: 'TITLE: title of the document INFORMATION: the information you are searching for in the form of a long and well composed question'"""
+        # description="use when searching for information filtering by a specific title.",
+        # description="use when you want to discover which is the title, asking a quesiton with informations you have",
+    )
+]
+
+def agent():
+    return initialize_agent(
+        tools=tools, 
+        llm=OpenAI(temperature=0.1), 
+        agent="zero-shot-react-description", 
+        verbose=True,
+        # return_intermediate_steps=True
+    )
+
+def ask_expert_agent(question):
+    agent = agent()
+    return agent.run(input=question)
