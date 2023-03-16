@@ -173,7 +173,7 @@ def add_sentences_to_db(sentences: list, title: str, author: str, year: str) -> 
     return "success"
 
 
-def get_qdrant_response(question, limit: int = 8):
+def get_qdrant_response(question, limit: int = 15):
     embeddings = get_cohere_embeddings(texts=[question])
     embedding = [float(e) for e in embeddings.embeddings[0]]
 
@@ -188,6 +188,7 @@ def get_qdrant_response(question, limit: int = 8):
         limit=limit,
     )
     return response
+
 
 def get_qdrant_response_by_filter(question, key, value, limit: int = 8):
     embeddings = get_cohere_embeddings(texts=[question])
@@ -215,10 +216,12 @@ def get_qdrant_response_by_filter(question, key, value, limit: int = 8):
 
     return response
 
+
 def get_openai_response(prompt):
     messages = [{"role": "user", "content": prompt}]
     
     openai_model = 'gpt-3.5-turbo'
+    # openai_model = 'gpt-4'
     response = openai.ChatCompletion.create(
         model=openai_model,
         messages=messages,

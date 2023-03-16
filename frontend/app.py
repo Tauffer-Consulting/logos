@@ -605,8 +605,8 @@ def send_question(n_clicks, question, checklist_value, response_components_style
         for r in qdrant_answer:
             prompt += f"""excerpt: author: {r.payload.get('author')}, title: {r.payload.get('title')}, text: {r.payload.get('text')}\n"""
         
-        if len(prompt) > 10000:
-            prompt = prompt[0:10000]
+        if len(prompt) > 20000:
+            prompt = prompt[0:20000]
 
         prompt += f"""
 Given the excerpts above, answer the following question in {language}:
