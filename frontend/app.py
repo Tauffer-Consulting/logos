@@ -572,6 +572,11 @@ def add_document(n_clicks, file_contents, title, author, year):
     State("checklist-inline-input", "value"),
     State("div-response-components", "style"),
     manager=background_callback_manager,
+    running=[
+        (Output("button-question", "children"), dbc.Spinner(size="sm"), "Ask"),
+        (Output("button-question", "disabled"), True, False),
+    ],
+    prevent_initial_call=True,
     background=True
 )
 def send_question(n_clicks, question, checklist_value, response_components_style):
