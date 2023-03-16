@@ -12,16 +12,6 @@ load_dotenv()
 
 class Agent():
     def __init__(self) -> None:
-        self.agent = initialize_agent(
-            tools=self.tools, 
-            llm=OpenAI(
-                temperature=0.3,
-                model_name="gpt-3.5-turbo" 
-            ), 
-            agent="zero-shot-react-description", 
-            max_iterations=6,
-            verbose=True,
-        )
         self.tools = [
             Tool(
                 name="search_internal_knowledge_base",
@@ -47,6 +37,16 @@ Create an input with the title of the document and the information you are searc
 Input template: 'TITLE: title of the document INFORMATION: the information you are searching for in the form of a long and well composed question'"""
             )
         ]
+        self.agent = initialize_agent(
+            tools=self.tools, 
+            llm=OpenAI(
+                temperature=0.3,
+                model_name="gpt-3.5-turbo" 
+            ), 
+            agent="zero-shot-react-description", 
+            max_iterations=6,
+            verbose=True,
+        )
         self.qdrant_answers = []
         self.language = ''
 
