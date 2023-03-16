@@ -563,7 +563,7 @@ def add_document(n_clicks, file_contents, title, author, year):
     return no_update, no_update, no_update
 
 
-@app.long_callback(
+@app.callback(
     Output("answer-text", "children"),
     Output("collapsible-references", "children"),
     Output("div-response-components", "style"),
@@ -571,7 +571,8 @@ def add_document(n_clicks, file_contents, title, author, year):
     State('text-input', 'value'),
     State("checklist-inline-input", "value"),
     State("div-response-components", "style"),
-    manager=background_callback_manager
+    manager=background_callback_manager,
+    background=True
 )
 def send_question(n_clicks, question, checklist_value, response_components_style):
     if not n_clicks:
@@ -586,6 +587,10 @@ def send_question(n_clicks, question, checklist_value, response_components_style
         agent_answer = agent.ask_expert_agent(question)
         references_rows = create_references_cards(references=agent.qdrant_answers)
         answer_text = html.P(str(agent_answer))
+        updated_style = deepcopy(response_components_style)
+        updated_style['visibility'] = 'visible'
+        updated_style['display'] = 'block'
+        return answer_text, references_rows, updated_style
     
     # If simple semantic search
     else:
