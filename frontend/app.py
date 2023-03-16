@@ -580,10 +580,9 @@ def send_question(n_clicks, question, checklist_value, response_components_style
     # Detect question language
     language = detect_language(question, module="python")
 
-    # If user selects the expert agent
+    # If user selects the expert agent search
     if checklist_value == [1]:
         agent = Agent()
-        print("entrou no checklist value")
         agent_answer = agent.ask_expert_agent(question)
         references_rows = create_references_cards(references=agent.qdrant_answers)
         answer_text = html.P(str(agent_answer))

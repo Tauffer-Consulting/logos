@@ -140,9 +140,11 @@ Question: {question}"""
     def ask_expert_agent(self, question):
         agent = initialize_agent(
             tools=self.tools, 
-            llm=OpenAI(temperature=0.1), 
+            llm=OpenAI(
+                temperature=0.3,
+                model_name="gpt-3.5-turbo" 
+            ), 
             agent="zero-shot-react-description", 
             verbose=True,
-            # return_intermediate_steps=True
         )
         return agent.run(input=question)
