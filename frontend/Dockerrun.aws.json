@@ -1,0 +1,11 @@
+{
+    "AWSEBDockerrunVersion": "1",
+    "Image": {
+        "Name": "695885284320.dkr.ecr.us-east-2.amazonaws.com/hackathon:latest"
+    },
+    "Ports": [
+        {
+            "ContainerPort": 8050
+        }
+    ]
+}
