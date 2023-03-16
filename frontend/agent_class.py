@@ -53,7 +53,7 @@ Input template: 'COLLECTED INFORMATION: all the information you've collected so 
         self.agent = initialize_agent(
             tools=self.tools, 
             llm=OpenAI(
-                temperature=0.3,
+                temperature=0.1,
                 model_name="gpt-3.5-turbo",
                 # model_name="gpt-4",
             ), 
@@ -63,6 +63,7 @@ Input template: 'COLLECTED INFORMATION: all the information you've collected so 
         )
         self.qdrant_answers = []
         self.language = ''
+
 
     def get_openai_response(self, qdrant_answer, question):
         prompt = ""
@@ -87,7 +88,7 @@ Question: {question}"""
     
 
     def compare_and_summarize(self, text):
-        prompt = f"""Based on the collected information, answer the question:
+        prompt = f"""Based on the collected information, answer the question in {self.language}:
 {text}"""
         response = openai.ChatCompletion.create(
             model='gpt-3.5-turbo',
@@ -112,6 +113,7 @@ Question: {question}"""
         embeddings = [float(e) for e in embeddings.embeddings[0]] 
         return embeddings
 
+
     def get_qdrant_response(self, question, limit: int = 8):
         embeddings = self.get_cohere_embeddings(texts=[question])
         db_client = QdrantClient(
@@ -126,9 +128,11 @@ Question: {question}"""
         self.qdrant_answers.extend(response)
         return response
 
+
     def qdrant_search(self, question):
         qdrant_answer = self.get_qdrant_response(question)
         return self.get_openai_response(qdrant_answer, question)
+
 
     def get_qdrant_response_by_filter(self, question, key, value, limit: int = 8):
         embeddings = self.get_cohere_embeddings(texts=[question])
@@ -183,4 +187,5 @@ Question: {question}"""
         
 
     def ask_expert_agent(self, question):
+        question += f" Answer in {self.language}"
         self.run_in_background(question=question)
