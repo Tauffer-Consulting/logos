@@ -29,7 +29,10 @@ def pre_parse_pdf(base64_pdf_bytestring: str, use_openai: bool = False) -> dict:
 
     pages_list = [p for p in reader.pages]
     first_pages_content = " ".join([p.extract_text().replace("\n", " ").replace("..", "") for p in pages_list[0:20]])[0:2000]
-    if use_openai:
+
+    if first_pages_content.isspace():
+        return {"title": "error - blank document", "author": "error - blank document", "year": ""}
+    elif use_openai:
         return extract_metadata_openai(text_content=first_pages_content)
     else:
         return {"title": "something", "author": "someone", "year": "2000"}
@@ -59,13 +62,16 @@ Information:"""
         # stop=["\n"]
     )
     response_string = response["choices"][0]["message"]["content"].lower()
-    print(response_string)
-    metadata = {
-        "title": response_string.split("title:")[1].split("2")[0].split("\n:")[0].strip(),
-        "author": response_string.split("author:")[1].split("3")[0].split("\n")[0].strip(),
-        "year": response_string.split("year:")[1].split("\n")[0].strip(),
-    }
-    return metadata
+
+    try:
+        metadata = {
+            "title": response_string.split("title:")[1].split("2")[0].split("\n:")[0].strip(),
+            "author": response_string.split("author:")[1].split("3")[0].split("\n")[0].strip(),
+            "year": response_string.split("year:")[1].split("\n")[0].strip(),
+        }
+        return metadata
+    except:
+        return {"title": "error", "author": "error", "year": ""}
 
 
 def add_pdf_to_db(base64_pdf_bytestring: str, title: str, author: str, year: str) -> None:
