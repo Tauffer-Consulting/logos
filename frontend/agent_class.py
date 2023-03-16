@@ -128,8 +128,6 @@ Question: {question}"""
 
 
     def search_by_title(self, question):
-        print("entrou no qdrant search by title")
-        print(question)
         title_info, question_info = question.split('TITLE:', 1)[1].split('INFORMATION:', 1)
         title = title_info.strip().lower()
         question_input = question_info.strip().lower()
