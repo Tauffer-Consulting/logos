@@ -28,7 +28,8 @@ def pre_parse_pdf(base64_pdf_bytestring: str, use_openai: bool = False) -> dict:
     reader = PdfReader(io.BytesIO(pdf_bytes))
 
     pages_list = [p for p in reader.pages]
-    first_pages_content = " ".join([p.extract_text().replace("\n", " ").replace("..", "") for p in pages_list[0:20]])[0:2000]
+    max_pages_metadata = min(len(pages_list), 20)
+    first_pages_content = " ".join([p.extract_text().replace("\n", " ").replace("..", "") for p in pages_list[0:max_pages_metadata]])[0:2000]
 
     if first_pages_content.isspace():
         return {"title": "error - blank document", "author": "error - blank document", "year": ""}
@@ -62,7 +63,6 @@ Information:"""
         # stop=["\n"]
     )
     response_string = response["choices"][0]["message"]["content"].lower()
-
     try:
         metadata = {
             "title": response_string.split("title:")[1].split("2")[0].split("\n:")[0].strip(),
@@ -76,8 +76,14 @@ Information:"""
 
 def add_pdf_to_db(base64_pdf_bytestring: str, title: str, author: str, year: str) -> None:
     full_text = parse_full_pdf(base64_pdf_bytestring=base64_pdf_bytestring)
+    print(full_text)
+    print()
     sentences = sentences_from_full_text(full_text=full_text, max_length=1000)
+    print(sentences)
+    print()
     result = add_sentences_to_db(sentences=sentences, title=title, author=author, year=year)
+    print(result)
+    print()
     return result
 
 
@@ -98,6 +104,8 @@ def parse_full_pdf(base64_pdf_bytestring: str) -> dict:
 
 def sentences_from_full_text(full_text: str, max_length: int=2000) -> list:
     sentences = full_text.split(". ")
+    if len(sentences) == 1:
+        return sentences
     sentences_list = list()
     last_sentence = sentences[0]
     for i, s in enumerate(sentences[1:]):
