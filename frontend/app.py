@@ -29,6 +29,7 @@ import diskcache
 cache = diskcache.Cache("./cache")
 background_callback_manager = DiskcacheManager(cache)
 
+global logs_test
 
 app = Dash(
     __name__, 
@@ -467,8 +468,27 @@ app.layout = html.Div(
         ),
         html.Br(),
         html.Br(),
+        dcc.Interval(
+            id='interval-component',
+            interval=5*1000, # in milliseconds
+            n_intervals=0,
+            max_intervals=0
+        ),
+        dcc.Store(id='logs-store'),
+        html.Div(id='logs-div')
     ]
 )
+
+@app.callback(
+    Output('logs-div', 'children'),
+    Input('interval-component', 'n_intervals'),
+    State('logs-store', 'data')
+)
+def update_logs(n, data):
+    if n <= 0:
+        return no_update
+    
+    return html.P(data)
 
 
 # Callbacks Question
@@ -567,14 +587,19 @@ def add_document(n_clicks, file_contents, title, author, year):
     Output("answer-text", "children"),
     Output("collapsible-references", "children"),
     Output("div-response-components", "style"),
+    Output('interval-component', 'max_intervals'),
     Input('button-question', 'n_clicks'),
     State('text-input', 'value'),
     State("checklist-inline-input", "value"),
     State("div-response-components", "style"),
+    progress=[
+        Output('logs-store', 'data'),
+        Output('interval-component', 'max_intervals'),
+    ],
     manager=background_callback_manager,
     background=True
 )
-def send_question(n_clicks, question, checklist_value, response_components_style):
+def send_question(set_progress, n_clicks, question, checklist_value, response_components_style):
     if not n_clicks:
         raise PreventUpdate()
 
@@ -584,13 +609,30 @@ def send_question(n_clicks, question, checklist_value, response_components_style
     # If user selects the expert agent
     if checklist_value == [1]:
         agent = Agent()
-        agent_answer = agent.ask_expert_agent(question)
+        agent.ask_expert_agent(question)
+
+        import time
+        import io
+        import sys
+        output_buffer = io.StringIO()
+        sys.stdout = sys.stderr = output_buffer
+        global logs_test
+        while agent.run_in_background_thread.is_alive():
+            logs_test = output_buffer.getvalue()
+            set_progress((str(logs_test), -1))
+            time.sleep(5)
+        
+        sys.stdout = sys.__stdout__
+        print("Logs: ", logs_test)
+        
+        agent_answer = agent.run_in_background_queue.get()
         references_rows = create_references_cards(references=agent.qdrant_answers)
         answer_text = html.P(str(agent_answer))
         updated_style = deepcopy(response_components_style)
         updated_style['visibility'] = 'visible'
         updated_style['display'] = 'block'
-        return answer_text, references_rows, updated_style
+        print('##################### Returning')
+        return answer_text, references_rows, updated_style, 0
     
     # If simple semantic search
     else:
@@ -616,7 +658,7 @@ Question: {question}"""
     updated_style = deepcopy(response_components_style)
     updated_style['visibility'] = 'visible'
     updated_style['display'] = 'block'
-    return answer_text, references_rows, updated_style
+    return answer_text, references_rows, updated_style, 0
 
 
 if __name__ == '__main__':
