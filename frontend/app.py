@@ -698,6 +698,7 @@ def send_question(set_progress, n_clicks, question, checklist_value, response_co
     # If user selects the expert agent search
     if checklist_value == [1]:
         agent = Agent()
+        agent.language = language
         agent.ask_expert_agent(question)
 
         output_buffer = io.StringIO()
