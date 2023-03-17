@@ -559,6 +559,8 @@ def update_logs(n, data):
         html.P('Expert agent thought process:', style={'font-weight': 'bold'})
     ]
     for e in splited_logs:
+        if 'Action:' in e or 'Action Input:' in e:
+            continue
         if 'Observation:' in e or 'Thought:' in e or 'Answer:' in e:
             splited_sentence = e.split(':')
             action = splited_sentence[0]
@@ -566,14 +568,19 @@ def update_logs(n, data):
             if not answer:
                 continue
             output_component = html.P([
-            html.Span(
-                    children=f'{action.strip()}: ',
-                    style={'font-weight': 'bold'}
-                ),
-                html.Span(children=answer)
-            ])
+                html.Span(
+                        children=f'{action.strip()}: ',
+                        style={'font-weight': 'bold'}
+                    ),
+                    html.Span(children=answer)
+                ])
             output_components.append(output_component)
+            continue
 
+        output_component = html.P(
+            html.Span(e)
+        )
+        output_components.append(output_component)
 
     return html.Div(output_components)
 
@@ -691,6 +698,7 @@ def add_document(n_clicks, file_contents, title, author, year):
     Output("collapsible-references", "children"),
     Output("div-response-components", "style"),
     Output('interval-component', 'max_intervals'),
+    Output('logs-store', 'data'),
     Input('button-question', 'n_clicks'),
     State('text-input', 'value'),
     State("checklist-inline-input", "value"),
@@ -729,6 +737,7 @@ def send_question(set_progress, n_clicks, question, checklist_value, response_co
         logs = output_buffer.getvalue()
         set_progress((str(logs), -1))
         sys.stdout = sys.__stdout__
+        time.sleep(1) # This will ensure that the logs are printed before the answer
 
         agent_answer = agent.run_in_background_queue.get()
         references_rows = create_references_cards(references=agent.qdrant_answers)
@@ -736,7 +745,7 @@ def send_question(set_progress, n_clicks, question, checklist_value, response_co
         updated_style = deepcopy(response_components_style)
         updated_style['visibility'] = 'visible'
         updated_style['display'] = 'block'
-        return answer_text, references_rows, updated_style, 0
+        return answer_text, references_rows, updated_style, 0, str(logs)
     
     # If simple semantic search
     else:
@@ -762,7 +771,7 @@ Question: {question}"""
     updated_style = deepcopy(response_components_style)
     updated_style['visibility'] = 'visible'
     updated_style['display'] = 'block'
-    return answer_text, references_rows, updated_style, 0
+    return answer_text, references_rows, updated_style, 0, ''
 
 
 if __name__ == '__main__':
