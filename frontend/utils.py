@@ -76,14 +76,8 @@ Information:"""
 
 def add_pdf_to_db(base64_pdf_bytestring: str, title: str, author: str, year: str) -> None:
     full_text = parse_full_pdf(base64_pdf_bytestring=base64_pdf_bytestring)
-    print(full_text)
-    print()
     sentences = sentences_from_full_text(full_text=full_text, max_length=1000)
-    print(sentences)
-    print()
     result = add_sentences_to_db(sentences=sentences, title=title, author=author, year=year)
-    print(result)
-    print()
     return result
 
 
@@ -190,7 +184,7 @@ def get_qdrant_response(question, limit: int = 15):
     return response
 
 
-def get_qdrant_response_by_filter(question, key, value, limit: int = 8):
+def get_qdrant_response_by_filter(question, key, value, limit: int = 7):
     embeddings = get_cohere_embeddings(texts=[question])
     embedding = [float(e) for e in embeddings.embeddings[0]]
 

@@ -7,6 +7,10 @@ from config import config
 import cohere
 import os
 from dotenv import load_dotenv
+from io import StringIO
+import threading
+import queue
+
 load_dotenv()
 
 
@@ -168,6 +172,20 @@ Question: {question}"""
         qdrant_answer = self.get_qdrant_response_by_filter(key='title', value=title, question=question_input)
         return self.get_openai_response(qdrant_answer, question)
 
-    def ask_expert_agent(self, question):
-        question += f" Answer in {self.language}"
+    def run(self, question):
         return self.agent.run(input=question)
+    
+    def _run_in_background(self, question):
+        results = self.run(question)
+        self.run_in_background_queue.put(results)
+
+    def run_in_background(self, question):
+        self.output_buffer = StringIO()
+        self.run_in_background_queue = queue.Queue()
+        self.run_in_background_thread = threading.Thread(target=self._run_in_background, args=(question,), daemon=True)
+        self.run_in_background_thread.start()
+        
+
+    def ask_expert_agent(self, question):
+        question += f" Answer in {self.language}!"
+        self.run_in_background(question=question)

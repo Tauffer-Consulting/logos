@@ -15,6 +15,11 @@ from utils import (
     detect_language,
 )
 from dash_utils import create_references_cards
+import time
+import io
+import sys
+import re
+
 
 
 # if 'REDIS_URL' in os.environ:
@@ -28,7 +33,6 @@ from dash_utils import create_references_cards
 import diskcache
 cache = diskcache.Cache("./cache")
 background_callback_manager = DiskcacheManager(cache)
-
 
 app = Dash(
     __name__, 
@@ -98,7 +102,7 @@ text_input = dbc.Textarea(
         'margin-right': 'auto', 
         'border-color': GRAY,
         'box-shadow': '0px 1px 4px rgb(0 0 0 / 70%)',
-        'resize': 'none', 
+        'resize': 'vertical', 
         # 'fontSize': '25px',
     }
 )
@@ -214,11 +218,45 @@ collapsible_references = dbc.Collapse(
     is_open=False,
 )
 
+expert_agent_logs_button = dbc.Button(
+    "Expert agent", 
+    id="button-expert-agent-logs", 
+    color="primary", 
+    style={
+        'width': '110px', 
+        'display': 'block', 
+        'margin-left': 'auto', 
+        'margin-right': '0',
+        'margin-top': '0px',
+        'color': GRAY, 
+        'background-color': 'white',
+        'border-color': GRAY, 'border-radius': '0.25rem', 'border-width': '1px',
+        'font-size': '1rem', 
+        'font-weight': '400',
+        'padding': '1px',
+    }
+)
+
 response_components = html.Div(
     id='div-response-components',
     children=[
         answer_text,
-        references_button
+        dbc.Row(
+            children=[
+                dbc.Col(
+                    references_button,
+                    width=3,
+                ),
+                dbc.Col(
+                    expert_agent_logs_button,
+                    width=3,
+                ),
+            ],
+            justify="end",
+            style={
+                'margin-top': '0px',
+            }
+        ),
     ],
     style={
         'width': '600px', 
@@ -231,12 +269,39 @@ response_components = html.Div(
     }
 )
 
+expert_agent_logs_div = html.Div(
+    children=[],
+    id='div-expert-agent-logs-text',
+    style={
+        'width': '600px', 
+        'height': '300px',
+        'display': 'block', 
+        'margin-left': 'auto', 
+        'margin-right': 'auto',
+        # 'margin-top': '8px',
+        'color': 'rgba(100, 100, 100, 0.6)', 
+        'background-color': 'white',
+        'border-width': '0px',
+        'font-size': '1.1rem',
+        'box-shadow': '0px 1px 8px rgb(0 0 0 / 20%)',
+        'overflow-y': 'scroll',
+        'padding': '10px',
+    }
+)
+
+collapsible_agent_logs = dbc.Collapse(
+    id="collapsible-agent-logs",
+    is_open=False,
+    children=[expert_agent_logs_div],
+)
+
 question_component = html.Div(
     children=[
         question_input_components,
         html.Br(),
         response_components,
         collapsible_references,
+        collapsible_agent_logs,
     ],
     id='div-question-component',
     style={"visibility": "visible", "display": "block"},
@@ -467,8 +532,72 @@ app.layout = html.Div(
         ),
         html.Br(),
         html.Br(),
+        dcc.Interval(
+            id='interval-component',
+            interval=0.3*1000, # in milliseconds
+            n_intervals=0,
+            max_intervals=0
+        ),
+        dcc.Store(id='logs-store'),
     ]
 )
+
+
+# Callback  to show expert agent logs
+@app.callback(
+    Output('div-expert-agent-logs-text', 'children'),
+    Input('interval-component', 'n_intervals'),
+    State('logs-store', 'data')
+)
+def update_logs(n, data):
+    if n <= 0:
+        return no_update
+    cleaned_logs = re.sub(r'\x1b[^m]*m', '', data)
+    splited_logs = cleaned_logs.split('\n')
+
+    output_components = [
+        html.P('Expert agent thought process:', style={'font-weight': 'bold'})
+    ]
+    counter = 0
+    for e in splited_logs:
+        if 'Action:' in e or 'Action Input:' in e or 'Finished chain' in e:
+            continue
+        if 'Observation:' in e or 'Thought:' in e or 'Answer:' in e:
+            splited_sentence = e.split(':')
+            action = splited_sentence[0]
+            answer = splited_sentence[1]
+            if not answer:
+                continue
+            output_component = html.P([
+                html.Span(
+                        children=f'{action.strip()}: ',
+                        style={'font-weight': 'bold'}
+                    ),
+                html.Span(children=answer)
+            ])
+            output_components.append(output_component)
+            counter += 1
+            continue
+
+        if counter == 0 and e:
+            output_component = html.P([
+                html.Span(
+                        children=f'Thought: ',
+                        style={'font-weight': 'bold'}
+                    ),
+                html.Span(children=e)
+            ])
+            output_components.append(output_component)
+            counter += 1
+            continue
+        
+        output_component = html.P(
+            html.Span(e)
+        )
+        output_components.append(output_component)
+        counter += 1
+
+    return html.Div(output_components)
 
 
 # Callbacks Question
@@ -480,6 +609,21 @@ app.layout = html.Div(
 def toggle_collapse_references(n, is_open):
     if n:
         return not is_open
+    return is_open
+
+
+@app.callback(
+    Output("collapsible-agent-logs", "is_open"),
+    Input("button-expert-agent-logs", "n_clicks"),
+    Input('button-question', 'n_clicks'),
+    State("collapsible-agent-logs", "is_open"),
+    State("checklist-inline-input", "value"),
+)
+def toggle_collapse_references(n_show, n_ask, is_open, checklist_value):
+    if n_show:
+        return not is_open
+    if n_ask and checklist_value == [1]:
+        return True
     return is_open
 
 
@@ -563,14 +707,21 @@ def add_document(n_clicks, file_contents, title, author, year):
     return no_update, no_update, no_update
 
 
+# Callback ask question
 @app.callback(
     Output("answer-text", "children"),
     Output("collapsible-references", "children"),
     Output("div-response-components", "style"),
+    Output('interval-component', 'max_intervals'),
+    Output('logs-store', 'data'),
     Input('button-question', 'n_clicks'),
     State('text-input', 'value'),
     State("checklist-inline-input", "value"),
     State("div-response-components", "style"),
+    progress=[
+        Output('logs-store', 'data'),
+        Output('interval-component', 'max_intervals'),
+    ],
     manager=background_callback_manager,
     running=[
         (Output("button-question", "children"), dbc.Spinner(size="sm"), "Ask"),
@@ -579,7 +730,7 @@ def add_document(n_clicks, file_contents, title, author, year):
     prevent_initial_call=True,
     background=True
 )
-def send_question(n_clicks, question, checklist_value, response_components_style):
+def send_question(set_progress, n_clicks, question, checklist_value, response_components_style):
     if not n_clicks:
         raise PreventUpdate()
 
@@ -590,13 +741,26 @@ def send_question(n_clicks, question, checklist_value, response_components_style
     if checklist_value == [1]:
         agent = Agent()
         agent.language = language
-        agent_answer = agent.ask_expert_agent(question)
+        agent.ask_expert_agent(question)
+
+        output_buffer = io.StringIO()
+        sys.stdout = sys.stderr = output_buffer
+        while agent.run_in_background_thread.is_alive():
+            logs = output_buffer.getvalue()
+            set_progress((str(logs), -1))
+            time.sleep(2)
+        logs = output_buffer.getvalue()
+        set_progress((str(logs), -1))
+        sys.stdout = sys.__stdout__
+        time.sleep(1) # This will ensure that the logs are printed before the answer
+
+        agent_answer = agent.run_in_background_queue.get()
         references_rows = create_references_cards(references=agent.qdrant_answers)
         answer_text = html.P(str(agent_answer))
         updated_style = deepcopy(response_components_style)
         updated_style['visibility'] = 'visible'
         updated_style['display'] = 'block'
-        return answer_text, references_rows, updated_style
+        return answer_text, references_rows, updated_style, 0, str(logs)
     
     # If simple semantic search
     else:
@@ -605,8 +769,8 @@ def send_question(n_clicks, question, checklist_value, response_components_style
         for r in qdrant_answer:
             prompt += f"""excerpt: author: {r.payload.get('author')}, title: {r.payload.get('title')}, text: {r.payload.get('text')}\n"""
         
-        if len(prompt) > 10000:
-            prompt = prompt[0:10000]
+        if len(prompt) > 9000:
+            prompt = prompt[0:9000]
 
         prompt += f"""
 Given the excerpts above, answer the following question in {language}:
@@ -622,7 +786,7 @@ Question: {question}"""
     updated_style = deepcopy(response_components_style)
     updated_style['visibility'] = 'visible'
     updated_style['display'] = 'block'
-    return answer_text, references_rows, updated_style
+    return answer_text, references_rows, updated_style, 0, ''
 
 
 if __name__ == '__main__':
