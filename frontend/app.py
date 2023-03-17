@@ -558,8 +558,9 @@ def update_logs(n, data):
     output_components = [
         html.P('Expert agent thought process:', style={'font-weight': 'bold'})
     ]
+    counter = 0
     for e in splited_logs:
-        if 'Action:' in e or 'Action Input:' in e:
+        if 'Action:' in e or 'Action Input:' in e or 'Finished chain' in e:
             continue
         if 'Observation:' in e or 'Thought:' in e or 'Answer:' in e:
             splited_sentence = e.split(':')
@@ -572,15 +573,29 @@ def update_logs(n, data):
                         children=f'{action.strip()}: ',
                         style={'font-weight': 'bold'}
                     ),
-                    html.Span(children=answer)
-                ])
+                html.Span(children=answer)
+            ])
             output_components.append(output_component)
+            counter += 1
             continue
 
+        if counter == 0 and e:
+            output_component = html.P([
+                html.Span(
+                        children=f'Thought: ',
+                        style={'font-weight': 'bold'}
+                    ),
+                html.Span(children=e)
+            ])
+            output_components.append(output_component)
+            counter += 1
+            continue
+        
         output_component = html.P(
             html.Span(e)
         )
         output_components.append(output_component)
+        counter += 1
 
     return html.Div(output_components)
 
