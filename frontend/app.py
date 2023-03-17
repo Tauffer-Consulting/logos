@@ -553,10 +553,29 @@ def update_logs(n, data):
     if n <= 0:
         return no_update
     cleaned_logs = re.sub(r'\x1b[^m]*m', '', data)
-    return html.Div([
-        html.P('Expert agent thought process:', style={'font-weight': 'bold'}),
-        html.P(cleaned_logs, style={'white-space': 'pre-line'})
-    ])
+    splited_logs = cleaned_logs.split('\n')
+
+    output_components = [
+        html.P('Expert agent thought process:', style={'font-weight': 'bold'})
+    ]
+    for e in splited_logs:
+        if 'Observation:' in e or 'Thought:' in e or 'Answer:' in e:
+            splited_sentence = e.split(':')
+            action = splited_sentence[0]
+            answer = splited_sentence[1]
+            if not answer:
+                continue
+            output_component = html.P([
+            html.Span(
+                    children=f'{action.strip()}: ',
+                    style={'font-weight': 'bold'}
+                ),
+                html.Span(children=answer)
+            ])
+            output_components.append(output_component)
+
+
+    return html.Div(output_components)
 
 
 # Callbacks Question
