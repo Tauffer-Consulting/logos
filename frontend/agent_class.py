@@ -158,12 +158,14 @@ Question: {question}"""
         self.qdrant_answers.extend(response)
         return response
 
+
     def search_by_author(self, question):
         author_info, question_info = question.split('AUTHOR:', 1)[1].split('INFORMATION:', 1)
         author = author_info.strip().lower()
         question_input = question_info.strip().lower()
         qdrant_answer = self.get_qdrant_response_by_filter(key='author', value=author, question=question_input)
         return self.get_openai_response(qdrant_answer, question)
+
 
     def search_by_title(self, question):
         title_info, question_info = question.split('TITLE:', 1)[1].split('INFORMATION:', 1)
@@ -172,12 +174,15 @@ Question: {question}"""
         qdrant_answer = self.get_qdrant_response_by_filter(key='title', value=title, question=question_input)
         return self.get_openai_response(qdrant_answer, question)
 
+
     def run(self, question):
         return self.agent.run(input=question)
-    
+
+
     def _run_in_background(self, question):
         results = self.run(question)
         self.run_in_background_queue.put(results)
+
 
     def run_in_background(self, question):
         self.output_buffer = StringIO()
