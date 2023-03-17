@@ -102,7 +102,7 @@ text_input = dbc.Textarea(
         'margin-right': 'auto', 
         'border-color': GRAY,
         'box-shadow': '0px 1px 4px rgb(0 0 0 / 70%)',
-        'resize': 'none', 
+        'resize': 'vertical', 
         # 'fontSize': '25px',
     }
 )
@@ -467,23 +467,26 @@ logs_div =  html.Div(
         # 'margin-left': 'auto', 
         # 'margin-right': 'auto',
         # 'margin-top': '8px',
-        'color': GRAY, 
+        'color': 'rgba(100, 100, 100, 0.6)', 
         'background-color': 'white',
-        'border-color': GRAY, 
-        'border-radius': '0.25rem', 
-        'border-width': '1px',
-        'border-style': 'solid',
+        'border-width': '0px',
         'font-size': '1.1rem',
-        'box-shadow': '0px 1px 4px rgb(0 0 0 / 70%)',
+        'box-shadow': '0px 1px 8px rgb(0 0 0 / 20%)',
         'overflow-y': 'scroll',
         'padding': '10px',
     }
 )
 
-logs_component = html.Div(
-    id='div-logs-components',
+expert_agent_logs_component = html.Div(
+    id='div-expert-agent-logs-components',
     children=[
-        'Expert Agent Logs',
+        html.P(
+            'Expert Agent thought process:', 
+            style={
+                'font-size': '1.1rem', 
+                'color': 'rgba(100, 100, 100, 0.9)', 
+            }
+        ),
         logs_div,
     ],
     style={
@@ -491,7 +494,7 @@ logs_component = html.Div(
         'display': 'block', 
         'margin-left': 'auto', 
         'margin-right': 'auto',
-        'margin-top': '8px',
+        # 'margin-top': '8px',
         #'display': 'none',
         #'visibility': 'hidden',
     }
@@ -511,8 +514,6 @@ app.layout = html.Div(
                 add_component
             ],
         ),
-        html.Br(),
-        html.Br(),
         dcc.Interval(
             id='interval-component',
             interval=0.3*1000, # in milliseconds
@@ -520,7 +521,7 @@ app.layout = html.Div(
             max_intervals=0
         ),
         dcc.Store(id='logs-store'),
-        logs_component
+        expert_agent_logs_component
     ]
 )
 
