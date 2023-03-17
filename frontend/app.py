@@ -218,13 +218,45 @@ collapsible_references = dbc.Collapse(
     is_open=False,
 )
 
+expert_agent_logs_button = dbc.Button(
+    "Expert agent", 
+    id="button-expert-agent-logs", 
+    color="primary", 
+    style={
+        'width': '110px', 
+        'display': 'block', 
+        'margin-left': 'auto', 
+        'margin-right': '0',
+        'margin-top': '0px',
+        'color': GRAY, 
+        'background-color': 'white',
+        'border-color': GRAY, 'border-radius': '0.25rem', 'border-width': '1px',
+        'font-size': '1rem', 
+        'font-weight': '400',
+        'padding': '1px',
+    }
+)
 
 response_components = html.Div(
     id='div-response-components',
     children=[
         answer_text,
-        references_button,
-        
+        dbc.Row(
+            children=[
+                dbc.Col(
+                    references_button,
+                    width=3,
+                ),
+                dbc.Col(
+                    expert_agent_logs_button,
+                    width=3,
+                ),
+            ],
+            justify="end",
+            style={
+                'margin-top': '0px',
+            }
+        ),
     ],
     style={
         'width': '600px', 
@@ -237,12 +269,39 @@ response_components = html.Div(
     }
 )
 
+expert_agent_logs_div = html.Div(
+    children=[],
+    id='div-expert-agent-logs-text',
+    style={
+        'width': '600px', 
+        'height': '300px',
+        'display': 'block', 
+        'margin-left': 'auto', 
+        'margin-right': 'auto',
+        # 'margin-top': '8px',
+        'color': 'rgba(100, 100, 100, 0.6)', 
+        'background-color': 'white',
+        'border-width': '0px',
+        'font-size': '1.1rem',
+        'box-shadow': '0px 1px 8px rgb(0 0 0 / 20%)',
+        'overflow-y': 'scroll',
+        'padding': '10px',
+    }
+)
+
+collapsible_agent_logs = dbc.Collapse(
+    id="collapsible-agent-logs",
+    is_open=False,
+    children=[expert_agent_logs_div],
+)
+
 question_component = html.Div(
     children=[
         question_input_components,
         html.Br(),
         response_components,
         collapsible_references,
+        collapsible_agent_logs,
     ],
     id='div-question-component',
     style={"visibility": "visible", "display": "block"},
@@ -457,49 +516,6 @@ add_document_toast = dbc.Toast(
     style={"position": "fixed", "top": 66, "right": 10, "width": 350},
 )
 
-logs_div =  html.Div(
-    children=[],
-    id='logs-div',
-    style={
-        # 'width': '600px', 
-        'height': '300px',
-        # 'display': 'block', 
-        # 'margin-left': 'auto', 
-        # 'margin-right': 'auto',
-        # 'margin-top': '8px',
-        'color': 'rgba(100, 100, 100, 0.6)', 
-        'background-color': 'white',
-        'border-width': '0px',
-        'font-size': '1.1rem',
-        'box-shadow': '0px 1px 8px rgb(0 0 0 / 20%)',
-        'overflow-y': 'scroll',
-        'padding': '10px',
-    }
-)
-
-expert_agent_logs_component = html.Div(
-    id='div-expert-agent-logs-components',
-    children=[
-        html.P(
-            'Expert Agent thought process:', 
-            style={
-                'font-size': '1.1rem', 
-                'color': 'rgba(100, 100, 100, 0.9)', 
-            }
-        ),
-        logs_div,
-    ],
-    style={
-        'width': '600px', 
-        'display': 'block', 
-        'margin-left': 'auto', 
-        'margin-right': 'auto',
-        # 'margin-top': '8px',
-        #'display': 'none',
-        #'visibility': 'hidden',
-    }
-)
-
 app.layout = html.Div(
     children=[
         title_image,
@@ -514,6 +530,8 @@ app.layout = html.Div(
                 add_component
             ],
         ),
+        html.Br(),
+        html.Br(),
         dcc.Interval(
             id='interval-component',
             interval=0.3*1000, # in milliseconds
@@ -521,21 +539,24 @@ app.layout = html.Div(
             max_intervals=0
         ),
         dcc.Store(id='logs-store'),
-        expert_agent_logs_component
     ]
 )
 
+
+# Callback  to show expert agent logs
 @app.callback(
-    Output('logs-div', 'children'),
+    Output('div-expert-agent-logs-text', 'children'),
     Input('interval-component', 'n_intervals'),
     State('logs-store', 'data')
 )
 def update_logs(n, data):
     if n <= 0:
         return no_update
-
     cleaned_logs = re.sub(r'\x1b[^m]*m', '', data)
-    return html.P(cleaned_logs, style={'white-space': 'pre-line'})
+    return html.Div([
+        html.P('Expert agent thought process:', style={'font-weight': 'bold'}),
+        html.P(cleaned_logs, style={'white-space': 'pre-line'})
+    ])
 
 
 # Callbacks Question
@@ -547,6 +568,21 @@ def update_logs(n, data):
 def toggle_collapse_references(n, is_open):
     if n:
         return not is_open
+    return is_open
+
+
+@app.callback(
+    Output("collapsible-agent-logs", "is_open"),
+    Input("button-expert-agent-logs", "n_clicks"),
+    Input('button-question', 'n_clicks'),
+    State("collapsible-agent-logs", "is_open"),
+    State("checklist-inline-input", "value"),
+)
+def toggle_collapse_references(n_show, n_ask, is_open, checklist_value):
+    if n_show:
+        return not is_open
+    if n_ask and checklist_value == [1]:
+        return True
     return is_open
 
 
@@ -630,6 +666,7 @@ def add_document(n_clicks, file_contents, title, author, year):
     return no_update, no_update, no_update
 
 
+# Callback ask question
 @app.callback(
     Output("answer-text", "children"),
     Output("collapsible-references", "children"),
@@ -688,8 +725,8 @@ def send_question(set_progress, n_clicks, question, checklist_value, response_co
         for r in qdrant_answer:
             prompt += f"""excerpt: author: {r.payload.get('author')}, title: {r.payload.get('title')}, text: {r.payload.get('text')}\n"""
         
-        if len(prompt) > 10000:
-            prompt = prompt[0:10000]
+        if len(prompt) > 9000:
+            prompt = prompt[0:9000]
 
         prompt += f"""
 Given the excerpts above, answer the following question in {language}:

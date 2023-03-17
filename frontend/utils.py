@@ -190,7 +190,7 @@ def get_qdrant_response(question, limit: int = 15):
     return response
 
 
-def get_qdrant_response_by_filter(question, key, value, limit: int = 8):
+def get_qdrant_response_by_filter(question, key, value, limit: int = 7):
     embeddings = get_cohere_embeddings(texts=[question])
     embedding = [float(e) for e in embeddings.embeddings[0]]
 
