@@ -1,4 +1,4 @@
-# lablab_hackathon_cohere_qdrant
+# Logos
 
 Add necessary ENV vars:
 ```bash
